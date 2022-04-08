@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; img-src {{ cspSource }} https:; script-src 'nonce-{{ nonce }}'; style-src {{ cspSource }};"
+    /-->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link href="./gallery.css" rel="stylesheet" />
+    <source id="version-src" src="{{ versionSrc }}" />
+  </head>
+  <body>
+    <div>
+      <h1>Plywood Gallery</h1>
+    </div>
+    <span><i>{{ version }}</i></span>
+    <p>
+      Press the image objects to paste the code in place of your cursor.<br>
+      Report issues and suggestions <a href="{{ extIssue }}">here</a>.<br><br>
+    </p>
+    <button id="updates" class="button-primary">Check For Updates</button>
+    <button id="download-again" class="button-secondary">
+      Force Redownload
+    </button>
+    <div id="galleryObjects">{{ galleryObjects }}</div>
+    <script nonce="{{ nonce }}" src="./gallery.js"></script>
+    <footer>
+      <span>Extension Github</span>
+      <span>Gallery Github</span>
+    </footer>
+  </body>
+</html>
