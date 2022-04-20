@@ -146,16 +146,16 @@ export class Gallery {
     }
   }
 
-  async update() {
-    let remoteConf = await fetchRemoteConfig(extensionUri, remoteRootDir);
-    if (!remoteConf) {
-      return;
-    }
-    let localConf = await fetchLocalConfig(
-      extensionUri,
-      nameIdentifierOf(remoteConf.projectName)
-    );
-    if (!yaml) {
-    }
-  }
+  // async update() {
+  //   let remoteConf = await fetchRemoteConfig(extensionUri, remoteRootDir);
+  //   if (!remoteConf) {
+  //     return;
+  //   }
+  //   let localConf = await fetchLocalConfig(
+  //     extensionUri,
+  //     nameIdentifierOf(remoteConf.projectName)
+  //   );
+  //   if (!yaml) {
+  //   }
+  // }
 }

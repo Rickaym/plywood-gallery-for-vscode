@@ -1,6 +1,6 @@
 {
   "name": "plywood-gallery",
-  "displayName": "Plywood Gallery",
+  "displayName": "Plywood Gallery For VSCode",
   "description": "A utility Extension to visualize code snippets for Python Graphical Frameworks.",
   "version": "0.0.1",
   "publisher": "Rickaym",
@@ -26,14 +26,20 @@
     "code snippets"
   ],
   "activationEvents": [
-    "onCommand:plywood-gallery.Tests"
+    "onCommand:plywood-gallery.ImportRemote",
+    "onCommand:plywood-gallery.ImportLocal"
   ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "plywood-gallery.Tests",
-        "title": "Run command related tests"
+        "command": "plywood-gallery.ImportRemote",
+        "title": "Plywood Gallery: Import a Gallery from GitHub."
+      },
+
+      {
+        "command": "plywood-gallery.ImportLocal",
+        "title": "Plywood Gallery: Import a Gallery from local disks."
       }
     ]
   },
