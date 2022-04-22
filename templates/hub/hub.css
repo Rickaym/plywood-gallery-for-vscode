@@ -1,0 +1,16 @@
+.galleryCard {
+  color: black;
+}
+
+.galleryPreviewImage {
+  color: black;
+}
+
+.galleryTitle {
+  font-size: larger;
+  text-decoration: underline;
+}
+
+.galleryDesc {
+  font-style: italic;
+}

@@ -3,8 +3,12 @@ import {
   fetchRemoteConfig,
   fetchLocalConfig,
   fetchRemoteAssets,
+  removeProjectFolder,
+  cacheDirectoryOf,
+  localDirectoryOf
 } from "./origin";
 import { Log } from "./globals";
+import { Hub } from "./hubWebview";
 
 async function importRemoteCommand(context: vscode.ExtensionContext) {
   const url = await vscode.window.showInputBox({
@@ -40,6 +44,26 @@ async function importLocalCommand(context: vscode.ExtensionContext) {
   }
 }
 
+async function openGalleryCommand(context: vscode.ExtensionContext) {
+  const h = new Hub(context);
+  h.show();
+}
+
+async function clearCacheCommand(context: vscode.ExtensionContext) {
+  removeProjectFolder(cacheDirectoryOf(context.extensionUri, ""));
+  Log.info("Removed entire cache folder due to user request.");
+}
+
+async function resetCommand(context: vscode.ExtensionContext) {
+  Log.info("User requested entire reset.");
+  removeProjectFolder(cacheDirectoryOf(context.extensionUri, ""));
+  Log.info("Removed entire cache folder due to user request.");
+  removeProjectFolder(localDirectoryOf(context.extensionUri, ""));
+  Log.info("Removed local project folders due to user request.");
+}
+
+
+
 export function activate(context: vscode.ExtensionContext) {
   Log.info("Plywood Gallery is active!");
   context.subscriptions.push(
@@ -48,6 +72,15 @@ export function activate(context: vscode.ExtensionContext) {
     }),
     vscode.commands.registerCommand("plywood-gallery.ImportLocal", () => {
       importLocalCommand(context);
+    }),
+    vscode.commands.registerCommand("plywood-gallery.Open", () => {
+      openGalleryCommand(context);
+    }),
+    vscode.commands.registerCommand("plywood-gallery.ClearCache", () => {
+      clearCacheCommand(context);
+    }),
+    vscode.commands.registerCommand("plywood-gallery.Reset", () => {
+      resetCommand(context);
     })
   );
 }

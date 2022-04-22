@@ -25,11 +25,11 @@ export class Log {
   }
 
   static warn(msg: string) {
-    return Log.logs("info", msg);
+    return Log.logs("warn", msg);
   }
 
   static error(msg: string) {
-    return Log.logs("info", msg);
+    return Log.logs("error", msg);
   }
 }
 
@@ -37,14 +37,16 @@ export const PROJECT_CONFIG_FILENAME = "html_configuration.yaml";
 export const ALLOWED_ASSET_FILE_EXTENSIONS = [".png", ".jpeg", ".jpg"];
 
 export function hasValidFileExtension(filename: string) {
-  return ALLOWED_ASSET_FILE_EXTENSIONS.some(extension => filename.endsWith(extension));
+  return ALLOWED_ASSET_FILE_EXTENSIONS.some((extension) =>
+    filename.endsWith(extension)
+  );
 }
 
 /**
  * Reformat all object keys to be in camelCase, values and
  * all other remains untouched.
  */
- export function reformatObject<T>(conf: T): T {
+export function reformatObject<T>(conf: T): T {
   Object.keys(conf).forEach((key) => {
     let segs = key.split("_");
     segs = segs.map((name) => {
@@ -59,10 +61,74 @@ export function hasValidFileExtension(filename: string) {
   return conf;
 }
 
-export function isValidPath(fsPath: string, filetype: boolean) {
+/**
+ * Provide a nonce for inline scripts inside webviews, this is necessary
+ * for script execution.
+ * @returns nonce
+ */
+export function getNonce(): string {
+  let text = "";
+  const possible =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  for (let i = 0; i < 32; i++) {
+    text += possible.charAt(Math.floor(Math.random() * possible.length));
+  }
+  return text;
+}
+
+export type WebviewResources = {
+  js: vscode.Uri;
+  html: vscode.Uri;
+  css: vscode.Uri;
+  icon: vscode.WebviewPanel["iconPath"];
+};
+
+/**
+ * Used in webviews to load the html, js and css paths in one call.
+ *
+ * @param extensionUri
+ * @param viewName
+ * @returns WebviewResources
+ */
+export function getWebviewResource(
+  extensionUri: vscode.Uri,
+  viewName: string
+): WebviewResources {
+  return {
+    css: vscode.Uri.joinPath(
+      extensionUri,
+      `templates/${viewName}/${viewName}.css`
+    ),
+    js: vscode.Uri.joinPath(extensionUri, `webview/${viewName}/${viewName}.js`),
+    html: vscode.Uri.joinPath(
+      extensionUri,
+      `templates/${viewName}/${viewName}.html`
+    ),
+    icon: {
+      dark: vscode.Uri.joinPath(
+        extensionUri,
+        `templates/${viewName}/${viewName}_darkicon.png`
+      ),
+      light: vscode.Uri.joinPath(
+        extensionUri,
+        `templates/${viewName}/${viewName}_lighticon.png`
+      ),
+    },
+  };
+}
+
+/**
+ * Check whether if the path leads to an existent object as well as
+ * of the type specified.
+ *
+ * @param fsPath
+ * @param isFile
+ * @returns
+ */
+export function isValidPath(fsPath: string, isFile: boolean) {
   if (!fs.existsSync(fsPath)) {
     return false;
-  } else if (filetype) {
+  } else if (isFile) {
     if (fs.statSync(fsPath).isFile()) {
       return true;
     } else {
@@ -77,6 +143,12 @@ export function isValidPath(fsPath: string, filetype: boolean) {
   }
 }
 
-export function canonical(dirName: string) {
-  return dirName.replace(" ", "_").toLowerCase();
+/**
+ * Modify unfriendly phrases to snake case.
+ *
+ * @param phrase
+ * @returns
+ */
+export function canonical(phrase: string) {
+  return phrase.replace(" ", "_").toLowerCase();
 }

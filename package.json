@@ -27,7 +27,10 @@
   ],
   "activationEvents": [
     "onCommand:plywood-gallery.ImportRemote",
-    "onCommand:plywood-gallery.ImportLocal"
+    "onCommand:plywood-gallery.ImportLocal",
+    "onCommand:plywood-gallery.Open",
+    "onCommand:plywood-gallery.ClearCache",
+    "onCommand:plywood-gallery.Reset"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -36,10 +39,21 @@
         "command": "plywood-gallery.ImportRemote",
         "title": "Plywood Gallery: Import a Gallery from GitHub."
       },
-
       {
         "command": "plywood-gallery.ImportLocal",
         "title": "Plywood Gallery: Import a Gallery from local disks."
+      },
+      {
+        "command": "plywood-gallery.Open",
+        "title": "Plywood Gallery: Open the gallery webview."
+      },
+      {
+        "command": "plywood-gallery.ClearCache",
+        "title": "Plywood Gallery: Forcibly clear cache, this usually automatic."
+      },
+      {
+        "command": "plywood-gallery.Reset",
+        "title": "Plywood Gallery: Forcibly remove all downloaded galleries."
       }
     ]
   },

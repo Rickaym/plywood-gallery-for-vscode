@@ -1,52 +1,10 @@
 import * as vscode from "vscode";
-import { fetchLocalConfig, fetchRemoteConfig, nameIdentifierOf } from "./origin";
+import {
+  getWebviewResource, WebviewResources
+} from "./globals";
 
 import { TemplateEngine } from "./templateEngine";
 
-type WebviewResources = {
-  js: vscode.Uri;
-  html: vscode.Uri;
-  css: vscode.Uri;
-};
-
-/**
- * Used in webviews to load the html, js and css paths in one call.
- *
- * @param extensionUri
- * @param viewName
- * @returns WebviewResources
- */
-export function getWebviewResource(
-  extensionUri: vscode.Uri,
-  viewName: string
-): WebviewResources {
-  return {
-    css: vscode.Uri.joinPath(
-      extensionUri,
-      `templates/${viewName}/${viewName}.css`
-    ),
-    js: vscode.Uri.joinPath(extensionUri, `webview/${viewName}/${viewName}.js`),
-    html: vscode.Uri.joinPath(
-      extensionUri,
-      `templates/${viewName}/${viewName}.html`
-    ),
-  };
-}
-
-/**
- * Provide a nonce for inline scripts inside webviews, this is necessary
- * for script execution.
- * @returns nonce
- */
-export function getNonce(): string {
-  let text = "";
-  const possible =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  for (let i = 0; i < 32; i++) {
-    text += possible.charAt(Math.floor(Math.random() * possible.length));
-  }
-  return text;
-}
 
 export class Gallery {
   constructor(public readonly ctx: vscode.ExtensionContext) {}
@@ -64,30 +22,30 @@ export class Gallery {
   );
 
   async show() {
-    let engine = new TemplateEngine("templates/gallery", this.ctx.extensionUri);
-    let panel = vscode.window.createWebviewPanel(
-      "plywood-gallery",
-      "Plywood Gallery",
-      {
-        viewColumn: vscode.ViewColumn.Beside,
-        preserveFocus: true,
-      },
-      {
-        enableScripts: true,
-      }
-    );
-    let galleryObjectsStr = "";
-    panel.iconPath = this.iconPath;
-    let htmlDoc = await engine.render({
-      cspSource: panel.webview.cspSource,
-      " gallery.js": panel.webview.asWebviewUri(this.loads.js).toString(),
-      " gallery.css": panel.webview.asWebviewUri(this.loads.css).toString(),
-      extIssue: "https://github.com/kolibril13/mobject-gallery/issues",
-      galleryIssue: "https://github.com/kolibril13/mobject-gallery/issues",
-      galleryObjects: galleryObjectsStr,
-      nonce: getNonce(),
-      version: "0.0.1",
-    });
+    // let engine = new TemplateEngine("templates/gallery", this.ctx.extensionUri);
+    // let panel = vscode.window.createWebviewPanel(
+    //   "plywood-gallery",
+    //   "Plywood Gallery",
+    //   {
+    //     viewColumn: vscode.ViewColumn.Beside,
+    //     preserveFocus: true,
+    //   },
+    //   {
+    //     enableScripts: true,
+    //   }
+    // );
+    // let galleryObjectsStr = "";
+    // panel.iconPath = this.iconPath;
+    // let htmlDoc = await engine.render({
+    //   cspSource: panel.webview.cspSource,
+    //   " gallery.js": panel.webview.asWebviewUri(this.loads.js).toString(),
+    //   " gallery.css": panel.webview.asWebviewUri(this.loads.css).toString(),
+    //   extIssue: "https://github.com/kolibril13/mobject-gallery/issues",
+    //   galleryIssue: "https://github.com/kolibril13/mobject-gallery/issues",
+    //   galleryObjects: galleryObjectsStr,
+    //   nonce: getNonce(),
+    //   version: "0.0.1",
+    // });
   }
 
   getPreviousEditor() {
