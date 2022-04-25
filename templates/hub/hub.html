@@ -7,18 +7,15 @@
       content="default-src 'none'; img-src {{ cspSource }} https:; script-src 'nonce-{{ nonce }}'; style-src {{ cspSource }};"
     >
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link href="./hub.css" rel="stylesheet" />
-    <source id="version-src" src="{{ versionSrc }}" />
+    <link href="hub.css" rel="stylesheet" />
   </head>
   <body>
     <div>
       <h1>Plywood Gallery</h1>
     </div>
-    <span><i>{{ version }}</i></span>
     <p>
       Discover downloaded and popular galleries here.
     </p>
-    <span class="infoTitle"> Open Positions </span><br><br>
     <table>
       {{ hubItems }}
     </table>

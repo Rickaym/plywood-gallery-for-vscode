@@ -335,4 +335,47 @@ export async function fetchRemoteAssets(
   });
 }
 
-export async function fetchLocalAssets() {}
+
+export type Project = {
+  config: HtmlConfig;
+  parameters: GalleryParams;
+  previewImage: vscode.Uri;
+};
+
+export async function getLocalProjects(extensionUri: vscode.Uri): Promise<Project[]> {
+  const prjs = await vscode.workspace.fs.readDirectory(
+    localDirectoryOf(extensionUri, "")
+  );
+  var projects: Project[] = [];
+  for (let prj of prjs) {
+    const config = await fetchLocalConfig(
+      extensionUri,
+      localDirectoryOf(extensionUri, prj[0], PROJECT_CONFIG_FILENAME)
+    );
+    if (!config) {
+      continue;
+    } else {
+      const params: GalleryParams = JSON.parse(
+        (
+          await vscode.workspace.fs.readFile(
+            localDirectoryOf(
+              extensionUri,
+              prj[0],
+              config.gallaryParametersPath.split("/").pop()
+            )
+          )
+        ).toString()
+      );
+      projects.push({
+        config: config,
+        parameters: params,
+        previewImage: localDirectoryOf(
+          extensionUri,
+          prj[0],
+          params[Object.keys(params)[0]][0].image_path.split("/").pop()
+        ),
+      });
+    }
+  }
+  return projects;
+}

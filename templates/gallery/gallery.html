@@ -2,12 +2,12 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <!-- meta
+    <meta
       http-equiv="Content-Security-Policy"
       content="default-src 'none'; img-src {{ cspSource }} https:; script-src 'nonce-{{ nonce }}'; style-src {{ cspSource }};"
-    /-->
+    >
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link href="./gallery.css" rel="stylesheet" />
+    <link href="gallery.css" rel="stylesheet" />
     <source id="version-src" src="{{ versionSrc }}" />
   </head>
   <body>
@@ -24,7 +24,7 @@
       Force Redownload
     </button>
     <div id="galleryObjects">{{ galleryObjects }}</div>
-    <script nonce="{{ nonce }}" src="./gallery.js"></script>
+    <script nonce="{{ nonce }}" src="gallery.js"></script>
     <footer>
       <span>Extension Github</span>
       <span>Gallery Github</span>

@@ -1,13 +1,17 @@
 .galleryCard {
-  color: black;
+  padding: 10px 30px 10px 30px;
+  text-align: left;
+  border-bottom: 3px solid rgb(39, 41, 49);
+  cursor: pointer;
 }
 
 .galleryPreviewImage {
-  color: black;
 }
 
 .galleryTitle {
+  letter-spacing: 0.5px;
   font-size: larger;
+  font-weight: bold;
   text-decoration: underline;
 }
 

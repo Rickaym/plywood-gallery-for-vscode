@@ -1,62 +1,13 @@
 import * as vscode from "vscode";
 import {
   getWebviewResource,
-  PROJECT_CONFIG_FILENAME,
   WebviewResources,
 } from "./globals";
-import {
-  fetchLocalConfig,
-  GalleryParams,
-  HtmlConfig,
-  localDirectoryOf,
-} from "./origin";
+import { getLocalProjects, Project } from "./origin";
 import { TemplateEngine } from "./templateEngine";
 
-type Project = {
-  config: HtmlConfig;
-  parameters: GalleryParams;
-  previewImage: vscode.Uri;
-};
 
-async function getLocalProjects(extensionUri: vscode.Uri): Promise<Project[]> {
-  const prjs = await vscode.workspace.fs.readDirectory(
-    localDirectoryOf(extensionUri, "")
-  );
-  var projects: Project[] = [];
-  for (let prj of prjs) {
-    const config = await fetchLocalConfig(
-      extensionUri,
-      localDirectoryOf(extensionUri, prj[0], PROJECT_CONFIG_FILENAME)
-    );
-    if (!config) {
-      continue;
-    } else {
-      const params: GalleryParams = JSON.parse(
-        (
-          await vscode.workspace.fs.readFile(
-            localDirectoryOf(
-              extensionUri,
-              prj[0],
-              config.gallaryParametersPath.split("/").pop()
-            )
-          )
-        ).toString()
-      );
-      projects.push({
-        config: config,
-        parameters: params,
-        previewImage: localDirectoryOf(
-          extensionUri,
-          prj[0],
-          params[Object.keys(params)[0]][0].image_path.split("/").pop()
-        ),
-      });
-    }
-  }
-  return projects;
-}
-
-function tabularize(project: Project) {
+function tabularize(project: Project, webview: vscode.Webview) {
   return TemplateEngine.trueRender(
     `
   <tr><td>
@@ -73,7 +24,7 @@ function tabularize(project: Project) {
   </td></tr>
   `,
     {
-      galleryPreviewImagePath: project.previewImage,
+      galleryPreviewImagePath: webview.asWebviewUri(project.previewImage),
       galleryTitle: project.config.projectName,
       galleryDesc: project.config.description,
       chapters: Object.keys(project.parameters)
@@ -109,7 +60,7 @@ export class Hub {
       this.ctx.extensionUri
     );
     let hubItemsStr = (await getLocalProjects(this.ctx.extensionUri))
-      .map(tabularize)
+      .map(p => tabularize(p, panel.webview))
       .join("\n");
     panel.iconPath = this.resource.icon;
     panel.webview.html = await engine.render({

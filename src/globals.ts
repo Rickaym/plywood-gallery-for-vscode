@@ -77,6 +77,7 @@ export function getNonce(): string {
 }
 
 export type WebviewResources = {
+  name: string;
   js: vscode.Uri;
   html: vscode.Uri;
   css: vscode.Uri;
@@ -95,6 +96,7 @@ export function getWebviewResource(
   viewName: string
 ): WebviewResources {
   return {
+    name: viewName,
     css: vscode.Uri.joinPath(
       extensionUri,
       `templates/${viewName}/${viewName}.css`

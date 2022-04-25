@@ -5,10 +5,11 @@ import {
   fetchRemoteAssets,
   removeProjectFolder,
   cacheDirectoryOf,
-  localDirectoryOf
+  localDirectoryOf,
+  getLocalProjects,
 } from "./origin";
 import { Log } from "./globals";
-import { Hub } from "./hubWebview";
+import { Gallery } from "./gallery";
 
 async function importRemoteCommand(context: vscode.ExtensionContext) {
   const url = await vscode.window.showInputBox({
@@ -45,8 +46,20 @@ async function importLocalCommand(context: vscode.ExtensionContext) {
 }
 
 async function openGalleryCommand(context: vscode.ExtensionContext) {
-  const h = new Hub(context);
-  h.show();
+  const projects = await getLocalProjects(context.extensionUri);
+  const projectName = await vscode.window.showQuickPick(
+    projects.map((p) => p.config.projectName), {"title": "Pick a gallery."}
+  );
+  if (!projectName) {
+    return;
+  }
+  const choice = projects.find((p) => p.config.projectName === projectName);
+  if (!choice) {
+    vscode.window.showErrorMessage("Couldn't find the gallery you've chosen.");
+    return;
+  } else {
+    new Gallery(context, choice).show();
+  }
 }
 
 async function clearCacheCommand(context: vscode.ExtensionContext) {
@@ -61,8 +74,6 @@ async function resetCommand(context: vscode.ExtensionContext) {
   removeProjectFolder(localDirectoryOf(context.extensionUri, ""));
   Log.info("Removed local project folders due to user request.");
 }
-
-
 
 export function activate(context: vscode.ExtensionContext) {
   Log.info("Plywood Gallery is active!");

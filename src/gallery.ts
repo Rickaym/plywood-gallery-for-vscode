@@ -1,51 +1,77 @@
 import * as vscode from "vscode";
-import {
-  getWebviewResource, WebviewResources
-} from "./globals";
+import { getWebviewResource, WebviewResources } from "./globals";
+import { localDirectoryOf, Project } from "./origin";
 
 import { TemplateEngine } from "./templateEngine";
 
-
 export class Gallery {
-  constructor(public readonly ctx: vscode.ExtensionContext) {}
+  constructor(
+    public readonly ctx: vscode.ExtensionContext,
+    public readonly project: Project
+  ) {}
 
-  private iconPath = {
-    dark: vscode.Uri.joinPath(this.ctx.extensionUri, ""),
-    light: vscode.Uri.joinPath(this.ctx.extensionUri, ""),
-  };
-
-  private lastActiveEditor: vscode.TextEditor | undefined;
-
-  private loads: WebviewResources = getWebviewResource(
+  private resource: WebviewResources = getWebviewResource(
     this.ctx.extensionUri,
     "gallery"
   );
 
+  private lastActiveEditor: vscode.TextEditor | undefined;
+
   async show() {
-    // let engine = new TemplateEngine("templates/gallery", this.ctx.extensionUri);
-    // let panel = vscode.window.createWebviewPanel(
-    //   "plywood-gallery",
-    //   "Plywood Gallery",
-    //   {
-    //     viewColumn: vscode.ViewColumn.Beside,
-    //     preserveFocus: true,
-    //   },
-    //   {
-    //     enableScripts: true,
-    //   }
-    // );
-    // let galleryObjectsStr = "";
-    // panel.iconPath = this.iconPath;
-    // let htmlDoc = await engine.render({
-    //   cspSource: panel.webview.cspSource,
-    //   " gallery.js": panel.webview.asWebviewUri(this.loads.js).toString(),
-    //   " gallery.css": panel.webview.asWebviewUri(this.loads.css).toString(),
-    //   extIssue: "https://github.com/kolibril13/mobject-gallery/issues",
-    //   galleryIssue: "https://github.com/kolibril13/mobject-gallery/issues",
-    //   galleryObjects: galleryObjectsStr,
-    //   nonce: getNonce(),
-    //   version: "0.0.1",
-    // });
+    const panel = vscode.window.createWebviewPanel(
+      "plywood-gallery",
+      "Plywood Gallery",
+      {
+        viewColumn: vscode.ViewColumn.Beside,
+        preserveFocus: true,
+      },
+      {
+        enableScripts: true,
+      }
+    );
+    let engine = new TemplateEngine(
+      panel,
+      this.resource,
+      this.ctx.extensionUri
+    );
+    let galleryObjs = "";
+
+    Object.keys(this.project.parameters).forEach((title) => {
+      galleryObjs += `<h2>${title}</h2>`;
+      this.project.parameters[title].forEach((imgMap) => {
+        const code = imgMap.code.replace(/"/g, "'");
+        galleryObjs += `<img class="image-button" src=${panel.webview.asWebviewUri(
+          localDirectoryOf(
+            this.ctx.extensionUri,
+            this.project.config.projectName,
+            imgMap.image_path.split("/").pop()
+          )
+        )} alt="${code}">`;
+      });
+    });
+
+    panel.iconPath = this.resource.icon;
+    panel.webview.html = await engine.render({
+      extIssue: "https://github.com/kolibril13/mobject-gallery/issues",
+      galleryIssue: "https://github.com/kolibril13/mobject-gallery/issues",
+      galleryObjects: galleryObjs,
+      version: "0.0.1",
+    });
+
+    panel.webview.onDidReceiveMessage(
+      (message) => {
+        if (
+          message.command === "update" ||
+          message.command === "download-again"
+        ) {
+          return;
+        } else {
+          this.insertCode(message.code);
+        }
+      },
+      undefined,
+      this.ctx.subscriptions
+    );
   }
 
   getPreviousEditor() {

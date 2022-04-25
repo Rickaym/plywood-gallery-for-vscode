@@ -45,7 +45,7 @@
       },
       {
         "command": "plywood-gallery.Open",
-        "title": "Plywood Gallery: Open the gallery webview."
+        "title": "Plywood Gallery: Open a gallery webview."
       },
       {
         "command": "plywood-gallery.ClearCache",
@@ -55,7 +55,25 @@
         "command": "plywood-gallery.Reset",
         "title": "Plywood Gallery: Forcibly remove all downloaded galleries."
       }
-    ]
+    ],
+    "viewContainers": {
+      "activitybar": [
+        {
+          "id": "gallery-explorer",
+          "title": "Gallery Explorer",
+          "icon": "assets/viewContainer.png"
+        }
+      ]
+    },
+    "views": {
+      "gallery-explorer": [
+        {
+          "id": "installed-galleries",
+          "name": "Galleries",
+          "contextualTitle": "Gallery Explorer"
+        }
+      ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run package",

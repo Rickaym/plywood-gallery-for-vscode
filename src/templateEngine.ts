@@ -8,19 +8,33 @@ export class TemplateEngine {
     public readonly extensionUri: vscode.Uri
   ) {}
 
+  private resMap = {
+    js: ` ${this.resource.name}.js`,
+    css: ` ${this.resource.name}.css`,
+  };
   private preamble = {
     cspSource: this.panel.webview.cspSource,
-    " hub.js": this.panel.webview.asWebviewUri(this.resource.js).toString(),
-    " hub.css": this.panel.webview.asWebviewUri(this.resource.css).toString(),
+    [this.resMap.js]: this.panel.webview
+      .asWebviewUri(this.resource.js)
+      .toString(),
+    [this.resMap.css]: this.panel.webview
+      .asWebviewUri(this.resource.css)
+      .toString(),
     nonce: getNonce(),
   };
 
   static trueRender(htmlDoc: string, globals: { [varname: string]: any }) {
     Object.keys(globals).forEach((varname) => {
       if (varname.startsWith(" ")) {
-        htmlDoc = htmlDoc.replace(varname.trim(), globals[varname]);
+        htmlDoc = htmlDoc.replace(
+          new RegExp(varname.trim(), "gi"),
+          globals[varname]
+        );
       } else {
-        htmlDoc = htmlDoc.replace(`{{ ${varname} }}`, globals[varname]);
+        htmlDoc = htmlDoc.replace(
+          new RegExp(`{{ ${varname} }}`, "gi"),
+          globals[varname]
+        );
       }
     });
     return htmlDoc;
@@ -40,6 +54,12 @@ export class TemplateEngine {
    * space.
    */
   async render(globals: { [varname: string]: any }) {
+    const a = this.resource.js.with({ scheme: "vscode-resource" })
+    .toString();
+    const b = this.panel.webview
+    .asWebviewUri(this.resource.js)
+    .toString();
+
     return TemplateEngine.trueRender(
       TemplateEngine.trueRender(
         (await vscode.workspace.fs.readFile(this.resource.html)).toString(),
