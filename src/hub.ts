@@ -1,72 +1,70 @@
 import * as vscode from "vscode";
-import {
-  getWebviewResource,
-  WebviewResources,
-} from "./globals";
 import { getLocalProjects, Project } from "./origin";
-import { TemplateEngine } from "./templateEngine";
 
-
-function tabularize(project: Project, webview: vscode.Webview) {
-  return TemplateEngine.trueRender(
-    `
-  <tr><td>
-    <div class="galleryCard">
-      <img class="galleryPreviewImage" alt="thumbnail" src="{{ galleryPreviewImagePath }}">
-    </div>
-  </td>
-  <td>
-    <div class="galleryCard">
-      <span class="galleryTitle">{{ galleryTitle }}</span><br>
-      <span class="galleryDesc">{{ galleryDesc }}</span>
-      <ul>{{ chapters }}</ul>
-    </div>
-  </td></tr>
-  `,
-    {
-      galleryPreviewImagePath: webview.asWebviewUri(project.previewImage),
-      galleryTitle: project.config.projectName,
-      galleryDesc: project.config.description,
-      chapters: Object.keys(project.parameters)
-        .map((chapter) => `<li>${chapter}</li>`)
-        .join("\n"),
+export class GalleryTreeItem extends vscode.TreeItem {
+  constructor(
+    private extensionUri: vscode.Uri,
+    public readonly name: string,
+    public readonly project?: Project
+  ) {
+    super(name, vscode.TreeItemCollapsibleState.None);
+    if (this.project) {
+      this.contextValue = "gallery";
+      this.description = `v${this.project.config.userContentVersion}`;
+      this.tooltip = this.project.config.repositoryUrl;
+      this.command = {
+        title: "Plywood Gallery: Open a gallery webview.",
+        command: "plywood-gallery.Open",
+        arguments: [this.label],
+      };
+      this.iconPath = vscode.Uri.joinPath(
+        this.extensionUri,
+        "assets/photo-gallery.png"
+      );
+    } else {
+      this.contextValue = "chapter";
     }
-  );
+  }
 }
 
-export class Hub {
-  constructor(public readonly ctx: vscode.ExtensionContext) {}
+export class InstalledGalleriesExplorerProvider
+  implements vscode.TreeDataProvider<GalleryTreeItem>
+{
+  constructor(private extensionUri: vscode.Uri) {}
 
-  private resource: WebviewResources = getWebviewResource(
-    this.ctx.extensionUri,
-    "hub"
-  );
+  private _onDidChangeTreeData: vscode.EventEmitter<
+    GalleryTreeItem | undefined | void
+  > = new vscode.EventEmitter<GalleryTreeItem | undefined | void>();
+  readonly onDidChangeTreeData: vscode.Event<
+    GalleryTreeItem | undefined | void
+  > = this._onDidChangeTreeData.event;
 
-  async show() {
-    let panel = vscode.window.createWebviewPanel(
-      "plywood-gallery",
-      "Plywood Gallery Hub",
-      {
-        viewColumn: vscode.ViewColumn.Beside,
-        preserveFocus: true,
-      },
-      {
-        enableScripts: true,
+  getTreeItem(element: GalleryTreeItem): vscode.TreeItem {
+    return element;
+  }
+
+  refresh(): void {
+		this._onDidChangeTreeData.fire();
+	}
+
+  async getChildren(element?: GalleryTreeItem): Promise<GalleryTreeItem[]> {
+    if (element) {
+      if (!element.project) {
+        return Promise.resolve([]);
+      } else {
+        return Promise.resolve(
+          Object.keys(element.project.parameters).map(
+            (name) => new GalleryTreeItem(this.extensionUri, name)
+          )
+        );
       }
-    );
-    let engine = new TemplateEngine(
-      panel,
-      this.resource,
-      this.ctx.extensionUri
-    );
-    let hubItemsStr = (await getLocalProjects(this.ctx.extensionUri))
-      .map(p => tabularize(p, panel.webview))
-      .join("\n");
-    panel.iconPath = this.resource.icon;
-    panel.webview.html = await engine.render({
-      version: "0.0.1",
-      hubItems: hubItemsStr,
-    });
-    panel.onDidDispose(() => {}, undefined, this.ctx.subscriptions);
+    } else {
+      return getLocalProjects(this.extensionUri).then((projects) =>
+        projects.map(
+          (prj) =>
+            new GalleryTreeItem(this.extensionUri, prj.config.projectName, prj)
+        )
+      );
+    }
   }
 }

@@ -12,22 +12,31 @@
   </head>
   <body>
     <div>
-      <h1>Plywood Gallery</h1>
+      <h1>{{ galleryTitle }} <i>{{ version }}</i></h1>
     </div>
-    <span><i>{{ version }}</i></span>
     <p>
-      Press the image objects to paste the code in place of your cursor.<br>
-      Report issues and suggestions <a href="{{ extIssue }}">here</a>.<br><br>
+      {{ galleryDesc }}
     </p>
-    <button id="updates" class="button-primary">Check For Updates</button>
-    <button id="download-again" class="button-secondary">
-      Force Redownload
-    </button>
+    <p>
+      Press the image objects to paste the code in place of your cursor.
+    </p>
+    <div class="gallery-header-controller">
+      <div class="header-label-container">
+        <div class="header-label selected-header-label">
+          Gallery
+        </div>
+        <div class="header-label">
+          Settings
+        </div>
+      </div>
+      <div class="header-button">
+        Check For Updates
+      </div>
+    </div>
     <div id="galleryObjects">{{ galleryObjects }}</div>
     <script nonce="{{ nonce }}" src="gallery.js"></script>
     <footer>
-      <span>Extension Github</span>
-      <span>Gallery Github</span>
+      {{ galleryFooter }}
     </footer>
   </body>
 </html>

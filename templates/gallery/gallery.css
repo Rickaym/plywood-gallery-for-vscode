@@ -1,3 +1,8 @@
+h1, h2 {
+  color: white;
+}
+
+
 .image-button {
   opacity: 1;
   display: inline-block;
@@ -16,28 +21,44 @@
   transform: scale(1.1);
 }
 
-button.button-primary {
-  background-color: #2A5DB0;
-  color: var(--vscode-button-foreground);
-  border-radius: 5px;
-  border: transparent;
+.gallery-header-controller {
+  border: none;
+  border-bottom: solid 1px;
+  border-color: var(--vscode-focusBorder);
+  display: flex;
+  justify-content:space-between;
+}
+
+.header-label-container {
+  display: flex;
+}
+
+.header-label {
+  padding: 7px 8px 8px 8px;
+  border-bottom: solid 1px;
+  border-bottom-color: transparent;
+  vertical-align: bottom;
   cursor: pointer;
-  transition: all 200ms ease;
 }
 
-button.button-primary:hover {
-  background-color: #3679e6;
+.header-label:hover {
+  color: var(--vscode-panelTitle-activeForeground);
 }
 
-button.button-secondary {
+.selected-header-label {
+  color: white;
+  border-bottom-color: white;
+}
+
+.header-button {
+  padding: 2px 8px 2px 8px;
   background-color: var(--vscode-button-background);
-  color: var(--vscode-button-foreground);
-  border-radius: 5px;
-  border: transparent;
+  color: white;
+  margin: 5px;
+  vertical-align: middle;
   cursor: pointer;
-  transition: all 200ms ease;
 }
 
-button.button-secondary:hover {
+.header-button:hover {
   background-color: var(--vscode-button-hoverBackground);
 }

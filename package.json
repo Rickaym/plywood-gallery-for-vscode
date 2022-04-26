@@ -30,50 +30,96 @@
     "onCommand:plywood-gallery.ImportLocal",
     "onCommand:plywood-gallery.Open",
     "onCommand:plywood-gallery.ClearCache",
-    "onCommand:plywood-gallery.Reset"
+    "onCommand:plywood-gallery.Reset",
+    "onCommand:plywood-gallery.Refresh",
+    "onCommand:plywood-gallery.RemoveGallery",
+    "onView:installed-galleries"
   ],
   "main": "./dist/extension.js",
   "contributes": {
-    "commands": [
-      {
-        "command": "plywood-gallery.ImportRemote",
-        "title": "Plywood Gallery: Import a Gallery from GitHub."
-      },
-      {
-        "command": "plywood-gallery.ImportLocal",
-        "title": "Plywood Gallery: Import a Gallery from local disks."
-      },
-      {
-        "command": "plywood-gallery.Open",
-        "title": "Plywood Gallery: Open a gallery webview."
-      },
-      {
-        "command": "plywood-gallery.ClearCache",
-        "title": "Plywood Gallery: Forcibly clear cache, this usually automatic."
-      },
-      {
-        "command": "plywood-gallery.Reset",
-        "title": "Plywood Gallery: Forcibly remove all downloaded galleries."
-      }
-    ],
-    "viewContainers": {
+    "viewsContainers": {
       "activitybar": [
         {
           "id": "gallery-explorer",
           "title": "Gallery Explorer",
-          "icon": "assets/viewContainer.png"
+          "icon": "./assets/galleries.png"
         }
       ]
     },
+    "viewsWelcome": [
+      {
+        "view": "installed-galleries",
+        "contents": "Rolling thumbleweed.. you haven't installed any galleries yet.\nImport a gallery now! \n[Remote Gallery](command:plywood-gallery.ImportRemote)\n[Local Gallery](command:plywood-gallery.ImportLocal)"
+      },
+      {
+        "view": "recommended-galleries",
+        "contents": "Oh oh! This is not yet supported. Expect great things.\n[Repository](https://github.com/Rickaym/Plywood-Gallery)"
+      }
+    ],
     "views": {
       "gallery-explorer": [
         {
           "id": "installed-galleries",
-          "name": "Galleries",
-          "contextualTitle": "Gallery Explorer"
+          "name": "Galleries"
+        },
+        {
+          "id": "recommended-galleries",
+          "name": "Recommended Galleries"
         }
       ]
-    }
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "plywood-gallery.Refresh",
+          "when": "view == installed-galleries",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "plywood-gallery.RemoveGallery",
+          "when": "view == installed-galleries && viewItem == gallery"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "plywood-gallery.ImportRemote",
+        "title": "Plywood Gallery: Import a Gallery from GitHub.",
+        "icon": "$(mark-github)"
+      },
+      {
+        "command": "plywood-gallery.ImportLocal",
+        "title": "Plywood Gallery: Import a Gallery from local disks.",
+        "icon": "$(file-directory-create)"
+      },
+      {
+        "command": "plywood-gallery.Open",
+        "title": "Plywood Gallery: Open a gallery webview.",
+        "icon": "$(preview)"
+      },
+      {
+        "command": "plywood-gallery.ClearCache",
+        "title": "Plywood Gallery: Forcibly clear cache, this usually automatic.",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "plywood-gallery.Reset",
+        "title": "Plywood Gallery: Forcibly remove all downloaded galleries.",
+        "icon": "$(redo)"
+      },
+      {
+        "command": "plywood-gallery.Refresh",
+        "title": "Plywood Gallery: Refresh the tree view for present galleries.",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "plywood-gallery.RemoveGallery",
+        "title": "Plywood Gallery: Remove a downloaded gallery.",
+        "icon": "$(trash)"
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run package",

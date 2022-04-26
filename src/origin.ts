@@ -21,7 +21,7 @@ export interface HtmlConfig {
   description: string;
   favicon: string;
   customFooter: string;
-  gallaryParametersPath: string;
+  galleryParametersPath: string;
 }
 
 interface ImageParameter {
@@ -208,7 +208,7 @@ export async function fetchRemoteAssets(
     increment: 5,
     message: Log.info(`Downloading gallery parameters.`),
   });
-  const res = await Axios.get(remoteRootDir + config.gallaryParametersPath);
+  const res = await Axios.get(remoteRootDir + config.galleryParametersPath);
 
   Log.error(`Fetching assets from remote ${res.config.url}.`);
   if (res.status !== 200) {
@@ -232,7 +232,7 @@ export async function fetchRemoteAssets(
   // 10 points for moving from cache to local
   const perAssetDownload = 80 / nImgs;
   await vscode.workspace.fs.writeFile(
-    cacheDirectoryOf(extensionUri, projectName, config.gallaryParametersPath.split("/").pop()),
+    cacheDirectoryOf(extensionUri, projectName, config.galleryParametersPath.split("/").pop()),
     new TextEncoder().encode(JSON.stringify(params))
   );
   progress.report({
@@ -361,7 +361,7 @@ export async function getLocalProjects(extensionUri: vscode.Uri): Promise<Projec
             localDirectoryOf(
               extensionUri,
               prj[0],
-              config.gallaryParametersPath.split("/").pop()
+              config.galleryParametersPath.split("/").pop()
             )
           )
         ).toString()

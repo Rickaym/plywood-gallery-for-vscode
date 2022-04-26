@@ -36,4 +36,6 @@ Users appreciate release notes as you update your extension.
 Initial release of Plywood Gallery
 
 
-<a href="https://www.flaticon.com/free-icons/code" title="code icons">Code icons created by Freepik - Flaticon</a>
+<a href="https://www.flaticon.com/free-icons/gallery" title="gallery icons">Gallery icons created by Ilham Fitrotul Hayat - Flaticon</a>
+<a href="https://www.flaticon.com/free-icons/gallery" title="gallery icons">Gallery icons created by Kiranshastry - Flaticon</a>
+<a href="https://www.flaticon.com/free-icons/photo" title="photo icons">Photo icons created by Andrean Prabowo - Flaticon</a>

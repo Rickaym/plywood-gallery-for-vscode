@@ -46,15 +46,16 @@ export class Gallery {
             this.project.config.projectName,
             imgMap.image_path.split("/").pop()
           )
-        )} alt="${code}">`;
+        )} style="${imgMap.css}" alt="${code}">`;
       });
     });
 
     panel.iconPath = this.resource.icon;
     panel.webview.html = await engine.render({
-      extIssue: "https://github.com/kolibril13/mobject-gallery/issues",
-      galleryIssue: "https://github.com/kolibril13/mobject-gallery/issues",
       galleryObjects: galleryObjs,
+      galleryDesc: this.project.config.description,
+      galleryTitle: this.project.config.projectName,
+      galleryFooter: this.project.config.customFooter,
       version: "0.0.1",
     });
 
