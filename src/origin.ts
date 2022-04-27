@@ -13,6 +13,7 @@ import {
 } from "./globals";
 
 import Axios from "axios";
+import { allowedNodeEnvironmentFlags } from "process";
 
 export interface HtmlConfig {
   projectName: string;
@@ -22,6 +23,22 @@ export interface HtmlConfig {
   favicon: string;
   customFooter: string;
   galleryParametersPath: string;
+}
+
+export function isValidConfig(conf: any) {
+  const mustKeys = [
+    "projectName",
+    "repositoryUrl",
+    "userContentVersion",
+    "description",
+    "galleryParametersPath",
+  ];
+  const confgKeys = Object.keys(conf);
+  if (!mustKeys.every((key) => confgKeys.includes(key))) {
+    return false;
+  } else {
+    return true;
+  }
 }
 
 interface ImageParameter {
@@ -64,18 +81,53 @@ export async function fetchLocalConfig(
  */
 export async function fetchRemoteConfig(
   extensionUri: vscode.Uri,
-  remoteRootDir: string
+  remoteRootDir: string,
+  branch: string
 ) {
-  const res = await Axios.get(
-    new URL(PROJECT_CONFIG_FILENAME, remoteRootDir).href
-  );
-  if (res.status !== 200) {
-    vscode.window.showErrorMessage(
-      `${res.statusText}: ${res.status}\nCouldn't fetch remote configuration.`
-    );
+  if (remoteRootDir.endsWith("/")) {
+    remoteRootDir = remoteRootDir.slice(0, remoteRootDir.length - 1);
+  }
+  const contentUrl = `${remoteRootDir.replace(
+    "github.com",
+    "raw.githubusercontent.com"
+  )}/${branch}/${PROJECT_CONFIG_FILENAME}`;
+  Log.info(`Fetching entry configuration from content url "${contentUrl}"`);
+  try {
+    var res = await Axios.get(contentUrl);
+  } catch (e: any) {
+    if (e.response) {
+      vscode.window.showErrorMessage(
+        Log.error(
+          `${e.response.status}: ${e.response.statusText}.\nCouldn't fetch the gallery configuration.`
+        )
+      );
+    } else {
+      throw e;
+    }
     return;
   }
+
+  Log.info(
+    `Content successfully fetched with status ${res.status}: ${res.statusText}`
+  );
   const yamlObj = reformatObject<HtmlConfig>(yaml.parse(res.data));
+  if (!isValidConfig(yamlObj)) {
+    vscode.window
+      .showErrorMessage(
+        Log.error(
+          "The gallery configuration for this repository has an invalid structure."
+        ),
+        "Report"
+      )
+      .then((r) => {
+        if (r === "Report") {
+          vscode.window.showInformationMessage(
+            `Report the issue for this repository at: ${remoteRootDir}/issues/new`
+          );
+        }
+      });
+    return;
+  }
   const cacheDir = cacheDirectoryOf(
     extensionUri,
     yamlObj.projectName,
@@ -232,7 +284,11 @@ export async function fetchRemoteAssets(
   // 10 points for moving from cache to local
   const perAssetDownload = 80 / nImgs;
   await vscode.workspace.fs.writeFile(
-    cacheDirectoryOf(extensionUri, projectName, config.galleryParametersPath.split("/").pop()),
+    cacheDirectoryOf(
+      extensionUri,
+      projectName,
+      config.galleryParametersPath.split("/").pop()
+    ),
     new TextEncoder().encode(JSON.stringify(params))
   );
   progress.report({
@@ -241,6 +297,18 @@ export async function fetchRemoteAssets(
   });
   if (cancelled) {
     return;
+  }
+  function reportDownloaded(imgName: string, ok: boolean) {
+    imgsDownloaded += 1;
+    progress.report({
+      increment: perAssetDownload / 2,
+      message: ok
+        ? Log.info(`Image "${imgName}" downloaded.`)
+        : Log.error(`Image "${imgName}" fail to download.`),
+    });
+    if (imgsDownloaded === nImgs) {
+      finished = true;
+    }
   }
   Object.keys(params).forEach((category) => {
     params[category].forEach((param) => {
@@ -272,30 +340,67 @@ export async function fetchRemoteAssets(
       });
       Axios.get(remoteRootDir + imgPath, {
         responseType: "stream",
-      }).then((res) => {
-        if (res.status !== 200) {
-          vscode.window.showErrorMessage(
-            `${res.statusText}: ${res.status}\nCouldn't download '${imgName}' file.`
+      })
+        .then((res) => {
+          if (res.status !== 200) {
+            vscode.window.showErrorMessage(
+              `${res.statusText}: ${res.status}\nCouldn't download '${imgName}' file.`
+            );
+            removeProjectFolder(cacheDirectoryOf(extensionUri, projectName));
+            return;
+          }
+          res.data.pipe(
+            createWriteStream(
+              cacheDirectoryOf(extensionUri, projectName, imgName).fsPath
+            ).on("finish", () => reportDownloaded(imgName, true))
           );
-          removeProjectFolder(cacheDirectoryOf(extensionUri, projectName));
-          return;
-        }
-        res.data.pipe(
-          createWriteStream(
-            cacheDirectoryOf(extensionUri, projectName, imgName).fsPath
-          ).on("finish", () => {
-            imgsDownloaded += 1;
-            progress.report({
-              increment: perAssetDownload / 2,
-              message: Log.info(`Image "${imgName}" downloaded.`),
-            });
-            if (imgsDownloaded === nImgs) {
-              finished = true;
-            }
-          })
-        );
-      });
+        })
+        .catch((reason) => {
+          Log.error(
+            `A following image has failed to be downloaded for ${reason}.`
+          );
+          reportDownloaded(imgName, false);
+        });
     });
+  });
+  return new Promise<void>((resolve, reject) => {
+    let id = setInterval(() => {
+      if (finished) {
+        progress.report({
+          increment: 5,
+          message: Log.info(
+            `Attempting to move cached download "${projectName}" into local.`
+          ),
+        });
+        moveCacheToLocal(extensionUri, projectName)
+          .then(() => {
+            progress.report({
+              increment: 5,
+              message: Log.info(
+                `Finished fetching remote GitHub gallery "${projectName}". You can cancel this message!`
+              ),
+            });
+            resolve();
+            clearInterval(id);
+          })
+          .catch((reason) => {
+            Log.info(
+              `Failed fetching remote GitHub gallery "${projectName}" for ${reason}.`
+            );
+            progress.report({
+              increment: 5,
+              message:
+                `Failed fetching remote GitHub gallery "${projectName}".` +
+                ' Check the output channel "Plywood Gallery" for more information',
+            });
+            resolve();
+            clearInterval(id);
+          });
+      } else {
+        reject();
+        clearInterval(id);
+      }
+    }, 1000);
   });
   return new Promise<void>((resolve, reject) => {
     setTimeout(() => {
@@ -335,14 +440,15 @@ export async function fetchRemoteAssets(
   });
 }
 
-
 export type Project = {
   config: HtmlConfig;
   parameters: GalleryParams;
   previewImage: vscode.Uri;
 };
 
-export async function getLocalProjects(extensionUri: vscode.Uri): Promise<Project[]> {
+export async function getLocalProjects(
+  extensionUri: vscode.Uri
+): Promise<Project[]> {
   const prjs = await vscode.workspace.fs.readDirectory(
     localDirectoryOf(extensionUri, "")
   );

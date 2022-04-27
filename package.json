@@ -33,7 +33,8 @@
     "onCommand:plywood-gallery.Reset",
     "onCommand:plywood-gallery.Refresh",
     "onCommand:plywood-gallery.RemoveGallery",
-    "onView:installed-galleries"
+    "onView:installed-galleries",
+    "onView:recommended-galleries",
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -60,7 +61,8 @@
       "gallery-explorer": [
         {
           "id": "installed-galleries",
-          "name": "Galleries"
+          "name": "Galleries",
+          "icon": "./assets/gallery.png"
         },
         {
           "id": "recommended-galleries",
@@ -72,7 +74,6 @@
       "view/title": [
         {
           "command": "plywood-gallery.Refresh",
-          "when": "view == installed-galleries",
           "group": "navigation"
         }
       ],

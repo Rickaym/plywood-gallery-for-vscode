@@ -3,9 +3,8 @@ import { getNonce, WebviewResources } from "./globals";
 
 export class TemplateEngine {
   constructor(
-    public readonly panel: vscode.WebviewPanel,
+    public readonly webview: vscode.Webview,
     public readonly resource: WebviewResources,
-    public readonly extensionUri: vscode.Uri
   ) {}
 
   private resMap = {
@@ -13,15 +12,18 @@ export class TemplateEngine {
     css: ` ${this.resource.name}.css`,
   };
   private preamble = {
-    cspSource: this.panel.webview.cspSource,
-    [this.resMap.js]: this.panel.webview
-      .asWebviewUri(this.resource.js)
-      .toString(),
-    [this.resMap.css]: this.panel.webview
-      .asWebviewUri(this.resource.css)
-      .toString(),
+    cspSource: this.webview.cspSource,
+    [this.resMap.js]: this.webview.asWebviewUri(this.resource.js).toString(),
+    [this.resMap.css]: this.webview.asWebviewUri(this.resource.css).toString(),
     nonce: getNonce(),
   };
+
+  static async renderDoc(fp: vscode.Uri, globals: { [varname: string]: any }) {
+    return TemplateEngine.trueRender(
+      (await vscode.workspace.fs.readFile(fp)).toString(),
+      globals
+    );
+  }
 
   static trueRender(htmlDoc: string, globals: { [varname: string]: any }) {
     Object.keys(globals).forEach((varname) => {
@@ -54,12 +56,6 @@ export class TemplateEngine {
    * space.
    */
   async render(globals: { [varname: string]: any }) {
-    const a = this.resource.js.with({ scheme: "vscode-resource" })
-    .toString();
-    const b = this.panel.webview
-    .asWebviewUri(this.resource.js)
-    .toString();
-
     return TemplateEngine.trueRender(
       TemplateEngine.trueRender(
         (await vscode.workspace.fs.readFile(this.resource.html)).toString(),

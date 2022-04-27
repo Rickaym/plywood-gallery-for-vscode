@@ -27,12 +27,12 @@ export class Gallery {
       },
       {
         enableScripts: true,
+        enableForms: false,
       }
     );
     let engine = new TemplateEngine(
-      panel,
-      this.resource,
-      this.ctx.extensionUri
+      panel.webview,
+      this.resource
     );
     let galleryObjs = "";
 

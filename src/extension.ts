@@ -8,21 +8,34 @@ import {
   localDirectoryOf,
   getLocalProjects,
 } from "./origin";
-import { Log } from "./globals";
+import { loadPackageJson, Log, PACKAGE_JSON } from "./globals";
 import { Gallery } from "./gallery";
-import { GalleryTreeItem, InstalledGalleriesExplorerProvider } from "./hub";
+import {
+  GalleryTreeItem,
+  HubWebviewProvider,
+  InstalledGalleriesExplorerProvider,
+} from "./hub";
 
 async function importRemoteCommand(ctx: vscode.ExtensionContext) {
-  const url = await vscode.window.showInputBox({
-    title: "Raw GitHub Url",
-    value:
-      "https://raw.githubusercontent.com/kolibril13/plywood-gallery/main/docs/",
+  let branch = "main";
+  let urlInput = await vscode.window.showInputBox({
+    title: "Raw GitHub Url (you can prefix an optional branch)",
+    placeHolder: "main:https://github.com/Rickaym/Plywood-Gallery-For-VSCode",
+    value: "https://github.com/kolibril13/mobject-gallery/",
   });
-  if (!url) {
+  if (!urlInput) {
     return;
   }
+  var url = urlInput.trim();
+  if (urlInput.includes(":") && urlInput.split(":").length - 1 === 2) {
+    const segs = urlInput.split(":");
+    if (segs[1]) {
+      branch = segs[0];
+      url = segs[1];
+    }
+  }
   Log.info(`Preparing to pull from remote repository ${url}`);
-  const config = await fetchRemoteConfig(ctx.extensionUri, url);
+  const config = await fetchRemoteConfig(ctx.extensionUri, url, branch);
   if (!config) {
     return;
   }
@@ -89,33 +102,52 @@ async function removeGalleryCommand(
   vscode.window.showWarningMessage("This method has not been implemented");
 }
 
-export function activate(context: vscode.ExtensionContext) {
+export function activate(ctx: vscode.ExtensionContext) {
   Log.info("Plywood Gallery is active!");
-  const igp = new InstalledGalleriesExplorerProvider(context.extensionUri);
-  vscode.window.registerTreeDataProvider("installed-galleries", igp);
-  context.subscriptions.push(
+  // Enables beta installed galleries
+  loadPackageJson(ctx.extensionUri).then(() => {
+    if (
+      PACKAGE_JSON.activationEvents.includes("onView:beta-installed-galleries")
+    ) {
+      const igp = new HubWebviewProvider(ctx);
+      vscode.window.registerWebviewViewProvider(
+        "beta-installed-galleries",
+        igp
+      );
+    }
+  });
+
+  const treeViewProvider = new InstalledGalleriesExplorerProvider(
+    ctx.extensionUri
+  );
+  vscode.window.registerTreeDataProvider(
+    "installed-galleries",
+    treeViewProvider
+  );
+
+  ctx.subscriptions.push(
     vscode.commands.registerCommand("plywood-gallery.ImportRemote", () => {
-      importRemoteCommand(context);
+      importRemoteCommand(ctx);
     }),
     vscode.commands.registerCommand("plywood-gallery.ImportLocal", () => {
-      importLocalCommand(context);
+      importLocalCommand(ctx);
     }),
     vscode.commands.registerCommand("plywood-gallery.Open", (...args) => {
-      openGalleryCommand(context, ...args);
+      openGalleryCommand(ctx, ...args);
     }),
     vscode.commands.registerCommand("plywood-gallery.ClearCache", () => {
-      clearCacheCommand(context);
+      clearCacheCommand(ctx);
     }),
     vscode.commands.registerCommand("plywood-gallery.Reset", () => {
-      resetCommand(context);
+      resetCommand(ctx);
     }),
     vscode.commands.registerCommand("plywood-gallery.Refresh", () => {
-      igp.refresh();
+      treeViewProvider.refresh();
     }),
     vscode.commands.registerCommand(
       "plywood-gallery.RemoveGallery",
       (...args) => {
-        removeGalleryCommand(context, ...args);
+        removeGalleryCommand(ctx, ...args);
       }
     )
   );

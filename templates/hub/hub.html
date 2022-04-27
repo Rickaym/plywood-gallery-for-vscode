@@ -2,26 +2,19 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta
+    <!--meta
       http-equiv="Content-Security-Policy"
       content="default-src 'none'; img-src {{ cspSource }} https:; script-src 'nonce-{{ nonce }}'; style-src {{ cspSource }};"
-    >
+    -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link href="hub.css" rel="stylesheet" />
   </head>
   <body>
-    <div>
-      <h1>Plywood Gallery</h1>
-    </div>
-    <p>
+    <p class="note">
       Discover downloaded and popular galleries here.
     </p>
-    <table>
+    <div class="hub-list-items">
       {{ hubItems }}
-    </table>
-    <footer>
-      <span>Extension Github</span>
-      <span>hub Github</span>
-    </footer>
+    </div>
   </body>
 </html>

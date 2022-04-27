@@ -33,7 +33,7 @@ export class Log {
   }
 }
 
-export const PROJECT_CONFIG_FILENAME = "html_configuration.yaml";
+export const PROJECT_CONFIG_FILENAME = "gallery_config.yaml";
 export const ALLOWED_ASSET_FILE_EXTENSIONS = [".png", ".jpeg", ".jpg"];
 
 export function hasValidFileExtension(filename: string) {
@@ -85,6 +85,30 @@ export type WebviewResources = {
 };
 
 /**
+ * Get the resource file of a specific view.
+ *
+ * @param extensionUri
+ * @param viewName
+ * @param fileType
+ * @param fileName
+ * @returns
+ */
+export function getWebviewResFp(
+  extensionUri: vscode.Uri,
+  viewName: string,
+  fileType: string,
+  fileName?: string
+) {
+  if (!fileName) {
+    fileName = viewName;
+  }
+  return vscode.Uri.joinPath(
+    extensionUri,
+    `templates/${viewName}/${fileName}.${fileType}`
+  );
+}
+
+/**
  * Used in webviews to load the html, js and css paths in one call.
  *
  * @param extensionUri
@@ -97,24 +121,12 @@ export function getWebviewResource(
 ): WebviewResources {
   return {
     name: viewName,
-    css: vscode.Uri.joinPath(
-      extensionUri,
-      `templates/${viewName}/${viewName}.css`
-    ),
-    js: vscode.Uri.joinPath(extensionUri, `webview/${viewName}/${viewName}.js`),
-    html: vscode.Uri.joinPath(
-      extensionUri,
-      `templates/${viewName}/${viewName}.html`
-    ),
+    css: getWebviewResFp(extensionUri, viewName, "css"),
+    js: getWebviewResFp(extensionUri, viewName, "js"),
+    html: getWebviewResFp(extensionUri, viewName, "html"),
     icon: {
-      dark: vscode.Uri.joinPath(
-        extensionUri,
-        `templates/${viewName}/${viewName}_darkicon.png`
-      ),
-      light: vscode.Uri.joinPath(
-        extensionUri,
-        `templates/${viewName}/${viewName}_lighticon.png`
-      ),
+      dark: getWebviewResFp(extensionUri, `${viewName}_darkicon`, "png"),
+      light: getWebviewResFp(extensionUri, `${viewName}_lighticon`, "png"),
     },
   };
 }
@@ -153,4 +165,14 @@ export function isValidPath(fsPath: string, isFile: boolean) {
  */
 export function canonical(phrase: string) {
   return phrase.replace(" ", "_").toLowerCase();
+}
+
+export var PACKAGE_JSON: undefined | any = undefined;
+
+export async function loadPackageJson(extensionUri: vscode.Uri) {
+  return vscode.workspace.fs
+    .readFile(vscode.Uri.joinPath(extensionUri, "package.json"))
+    .then((val) => {
+      PACKAGE_JSON = JSON.parse(val.toString());
+    });
 }

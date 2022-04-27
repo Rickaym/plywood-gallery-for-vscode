@@ -1,20 +1,60 @@
-.galleryCard {
-  padding: 10px 30px 10px 30px;
-  text-align: left;
-  border-bottom: 3px solid rgb(39, 41, 49);
+body {
+  padding: 0;
+}
+
+.note {
+  padding: 0 20px;
+}
+
+.hub-gallery-thumbnail {
+  padding: 5px 14px 10px 0;
+}
+
+.thumbnail {
+  flex-shrink: 0;
+}
+
+.hub-gallery-item {
+  background: var(--vscode-menu-background);
+  border-bottom: 1px solid var(--vscode-focusBorder);
+  overflow: hidden;
+  display: flex;
   cursor: pointer;
+  padding-left: 16px;
 }
 
-.galleryPreviewImage {
+.hub-gallery-item .footer {
+  display: flex;
+  margin-top: auto;
 }
 
-.galleryTitle {
+.hub-gallery-item:hover {
+  background: var(--vscode-menu-selectionBackground);
+  color: var(--vscode-settings-headerForeground);
+}
+
+.hub-gallery-title {
+  padding-right: 20px;
   letter-spacing: 0.5px;
-  font-size: larger;
+  font-size: 13;
   font-weight: bold;
-  text-decoration: underline;
 }
 
-.galleryDesc {
-  font-style: italic;
+.hub-gallery-contributors {
+  font-size: 10px;
+  font-weight: lighter;
+  color: var(--vscode-foreground);
+}
+
+.hub-gallery-content {
+  overflow: hidden;
+  padding: 0 20px 11px 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.hub-gallery-desc {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }

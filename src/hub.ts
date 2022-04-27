@@ -1,13 +1,69 @@
 import * as vscode from "vscode";
+import {
+  getWebviewResFp,
+  getWebviewResource,
+  WebviewResources,
+} from "./globals";
 import { getLocalProjects, Project } from "./origin";
+import { TemplateEngine } from "./templateEngine";
+
+function tabularize(
+  extensionUri: vscode.Uri,
+  htmlDoc: string,
+  project: Project,
+  webview: vscode.Webview
+) {
+  return TemplateEngine.trueRender(htmlDoc, {
+    galleryPreviewImagePath: webview.asWebviewUri(project.previewImage),
+    galleryTitle: project.config.projectName,
+    galleryDesc: project.config.description.replace(new RegExp("\n", "g"), " "),
+    // chapters: Object.keys(project.parameters)
+    //   .map((chapter) => `<li>${chapter}</li>`)
+    //   .join("\n"),
+  });
+}
+
+export class HubWebviewProvider implements vscode.WebviewViewProvider {
+  constructor(private ctx: vscode.ExtensionContext) {}
+
+  private resource: WebviewResources = getWebviewResource(
+    this.ctx.extensionUri,
+    "hub"
+  );
+
+  async resolveWebviewView(
+    webviewView: vscode.WebviewView,
+    context: vscode.WebviewViewResolveContext<unknown>,
+    token: vscode.CancellationToken
+  ): Promise<void> {
+    webviewView.webview.options = { enableScripts: true };
+    let engine = new TemplateEngine(webviewView.webview, this.resource);
+    let hubItemDoc = (
+      await vscode.workspace.fs.readFile(
+        getWebviewResFp(this.ctx.extensionUri, "hub", "html", "hub_item")
+      )
+    ).toString();
+    let hubItemsStr = (await getLocalProjects(this.ctx.extensionUri))
+      .map((p) =>
+        tabularize(this.ctx.extensionUri, hubItemDoc, p, webviewView.webview)
+      )
+      .join("\n");
+
+    webviewView.webview.html = await engine.render({
+      version: "0.0.1",
+      hubItems: hubItemsStr,
+    });
+  }
+}
 
 export class GalleryTreeItem extends vscode.TreeItem {
   constructor(
     private extensionUri: vscode.Uri,
+    public collapsibleState: vscode.TreeItemCollapsibleState,
     public readonly name: string,
     public readonly project?: Project
   ) {
-    super(name, vscode.TreeItemCollapsibleState.None);
+    super(name, collapsibleState);
     if (this.project) {
       this.contextValue = "gallery";
       this.description = `v${this.project.config.userContentVersion}`;
@@ -23,6 +79,21 @@ export class GalleryTreeItem extends vscode.TreeItem {
       );
     } else {
       this.contextValue = "chapter";
+    }
+  }
+
+  getChapters() {
+    if (this.project) {
+      return Object.keys(this.project.parameters).map(
+        (name) =>
+          new GalleryTreeItem(
+            this.extensionUri,
+            vscode.TreeItemCollapsibleState.Collapsed,
+            name
+          )
+      );
+    } else {
+      return [];
     }
   }
 }
@@ -44,25 +115,22 @@ export class InstalledGalleriesExplorerProvider
   }
 
   refresh(): void {
-		this._onDidChangeTreeData.fire();
-	}
+    this._onDidChangeTreeData.fire();
+  }
 
   async getChildren(element?: GalleryTreeItem): Promise<GalleryTreeItem[]> {
     if (element) {
-      if (!element.project) {
-        return Promise.resolve([]);
-      } else {
-        return Promise.resolve(
-          Object.keys(element.project.parameters).map(
-            (name) => new GalleryTreeItem(this.extensionUri, name)
-          )
-        );
-      }
+      return Promise.resolve(element.getChapters());
     } else {
       return getLocalProjects(this.extensionUri).then((projects) =>
         projects.map(
           (prj) =>
-            new GalleryTreeItem(this.extensionUri, prj.config.projectName, prj)
+            new GalleryTreeItem(
+              this.extensionUri,
+              vscode.TreeItemCollapsibleState.None,
+              prj.config.projectName,
+              prj
+            )
         )
       );
     }
