@@ -39,6 +39,7 @@ h1, h2 {
   border-bottom-color: transparent;
   vertical-align: bottom;
   cursor: pointer;
+  min-width: 108px;
 }
 
 .header-label:hover {

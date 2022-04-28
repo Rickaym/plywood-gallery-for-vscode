@@ -5,11 +5,16 @@ import { localDirectoryOf, Project } from "./origin";
 import { TemplateEngine } from "./templateEngine";
 
 export class Gallery {
-  constructor(
-    public readonly ctx: vscode.ExtensionContext,
-    public readonly project: Project
-  ) {}
-
+  constructor(public readonly ctx: vscode.ExtensionContext) {
+    vscode.window.onDidChangeActiveTextEditor(
+      () => {
+        this.lastActiveEditor = vscode.window.activeTextEditor;
+      },
+      null,
+      ctx.subscriptions
+    );
+  }
+  private panel: vscode.WebviewPanel | undefined;
   private resource: WebviewResources = getWebviewResource(
     this.ctx.extensionUri,
     "gallery"
@@ -17,45 +22,47 @@ export class Gallery {
 
   private lastActiveEditor: vscode.TextEditor | undefined;
 
-  async show() {
-    const panel = vscode.window.createWebviewPanel(
-      "plywood-gallery",
-      "Plywood Gallery",
-      {
-        viewColumn: vscode.ViewColumn.Beside,
-        preserveFocus: true,
-      },
-      {
-        enableScripts: true,
-        enableForms: false,
-      }
-    );
-    let engine = new TemplateEngine(
-      panel.webview,
-      this.resource
-    );
-    let galleryObjs = "";
+  async show(project: Project) {
+    if (this.panel) {
+      this.panel.title = project.config.projectName;
+      var panel = this.panel;
+    } else {
+      var panel = vscode.window.createWebviewPanel(
+        "plywood-gallery",
+        project.config.projectName,
+        {
+          viewColumn: vscode.ViewColumn.Beside,
+          preserveFocus: true,
+        },
+        {
+          enableScripts: true,
+          enableForms: false,
+        }
+      );
+      this.panel = panel;
+    }
 
-    Object.keys(this.project.parameters).forEach((title) => {
+    let engine = new TemplateEngine(panel.webview, this.resource);
+    let galleryObjs = "";
+    Object.keys(project.parameters).forEach((title) => {
       galleryObjs += `<h2>${title}</h2>`;
-      this.project.parameters[title].forEach((imgMap) => {
+      project.parameters[title].forEach((imgMap) => {
         const code = imgMap.code.replace(/"/g, "'");
         galleryObjs += `<img class="image-button" src=${panel.webview.asWebviewUri(
           localDirectoryOf(
             this.ctx.extensionUri,
-            this.project.config.projectName,
+            project.config.projectName,
             imgMap.image_path.split("/").pop()
           )
         )} style="${imgMap.css}" alt="${code}">`;
       });
     });
-
     panel.iconPath = this.resource.icon;
     panel.webview.html = await engine.render({
       galleryObjects: galleryObjs,
-      galleryDesc: this.project.config.description,
-      galleryTitle: this.project.config.projectName,
-      galleryFooter: this.project.config.customFooter,
+      galleryDesc: project.config.description,
+      galleryTitle: project.config.projectName,
+      galleryFooter: project.config.customFooter,
       version: "0.0.1",
     });
 
@@ -69,6 +76,13 @@ export class Gallery {
         } else {
           this.insertCode(message.code);
         }
+      },
+      undefined,
+      this.ctx.subscriptions
+    );
+    panel.onDidDispose(
+      () => {
+        this.panel = undefined;
       },
       undefined,
       this.ctx.subscriptions

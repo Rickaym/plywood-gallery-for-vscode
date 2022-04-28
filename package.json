@@ -34,7 +34,7 @@
     "onCommand:plywood-gallery.Refresh",
     "onCommand:plywood-gallery.RemoveGallery",
     "onView:installed-galleries",
-    "onView:recommended-galleries",
+    "onView:recommended-galleries"
   ],
   "main": "./dist/extension.js",
   "contributes": {

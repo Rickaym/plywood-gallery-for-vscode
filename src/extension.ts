@@ -21,7 +21,7 @@ async function importRemoteCommand(ctx: vscode.ExtensionContext) {
   let urlInput = await vscode.window.showInputBox({
     title: "Raw GitHub Url (you can prefix an optional branch)",
     placeHolder: "main:https://github.com/Rickaym/Plywood-Gallery-For-VSCode",
-    value: "https://github.com/kolibril13/mobject-gallery/",
+    value: "https://github.com/kolibril13/plywood-gallery-minimal-example/",
   });
   if (!urlInput) {
     return;
@@ -34,7 +34,11 @@ async function importRemoteCommand(ctx: vscode.ExtensionContext) {
       url = segs[1];
     }
   }
-  Log.info(`Preparing to pull from remote repository ${url}`);
+  if (url.endsWith("/")) {
+    url = url.slice(0, url.length - 1);
+  }
+  url = `${url}/${branch}`;
+  Log.info(`Preparing to pull from raw content base repository ${url}`);
   const config = await fetchRemoteConfig(ctx.extensionUri, url, branch);
   if (!config) {
     return;
@@ -46,7 +50,13 @@ async function importRemoteCommand(ctx: vscode.ExtensionContext) {
       cancellable: true,
     },
     (progress, token) =>
-      fetchRemoteAssets(ctx.extensionUri, url, config, progress, token)
+      fetchRemoteAssets(
+        ctx.extensionUri,
+        url.replace("github.com", "raw.githubusercontent.com"),
+        config,
+        progress,
+        token
+      )
   );
 }
 
@@ -61,6 +71,7 @@ async function importLocalCommand(ctx: vscode.ExtensionContext) {
 
 async function openGalleryCommand(
   ctx: vscode.ExtensionContext,
+  gallery: Gallery,
   projectName?: string
 ) {
   const projects = await getLocalProjects(ctx.extensionUri);
@@ -78,7 +89,7 @@ async function openGalleryCommand(
     vscode.window.showErrorMessage("Couldn't find the gallery you've chosen.");
     return;
   } else {
-    new Gallery(ctx, choice).show();
+    gallery.show(choice);
   }
 }
 
@@ -124,7 +135,7 @@ export function activate(ctx: vscode.ExtensionContext) {
     "installed-galleries",
     treeViewProvider
   );
-
+  const gallery = new Gallery(ctx);
   ctx.subscriptions.push(
     vscode.commands.registerCommand("plywood-gallery.ImportRemote", () => {
       importRemoteCommand(ctx);
@@ -133,7 +144,7 @@ export function activate(ctx: vscode.ExtensionContext) {
       importLocalCommand(ctx);
     }),
     vscode.commands.registerCommand("plywood-gallery.Open", (...args) => {
-      openGalleryCommand(ctx, ...args);
+      openGalleryCommand(ctx, gallery, ...args);
     }),
     vscode.commands.registerCommand("plywood-gallery.ClearCache", () => {
       clearCacheCommand(ctx);

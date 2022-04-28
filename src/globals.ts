@@ -164,7 +164,7 @@ export function isValidPath(fsPath: string, isFile: boolean) {
  * @returns
  */
 export function canonical(phrase: string) {
-  return phrase.replace(" ", "_").toLowerCase();
+  return phrase.replace(/ |-/g, "_").toLowerCase();
 }
 
 export var PACKAGE_JSON: undefined | any = undefined;

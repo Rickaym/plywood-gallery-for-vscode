@@ -61,11 +61,11 @@ export class GalleryTreeItem extends vscode.TreeItem {
     private extensionUri: vscode.Uri,
     public collapsibleState: vscode.TreeItemCollapsibleState,
     public readonly name: string,
-    public readonly project?: Project
+    public readonly project: Project,
+    public readonly type: string
   ) {
     super(name, collapsibleState);
-    if (this.project) {
-      this.contextValue = "gallery";
+    if (type === "gallery") {
       this.description = `v${this.project.config.userContentVersion}`;
       this.tooltip = this.project.config.repositoryUrl;
       this.command = {
@@ -77,21 +77,39 @@ export class GalleryTreeItem extends vscode.TreeItem {
         this.extensionUri,
         "assets/photo-gallery.png"
       );
+    } else if (type === "chapter") {
+      this.description = `${project.parameters[name].length} items`;
+      this.iconPath = new vscode.ThemeIcon("book");
     } else {
-      this.contextValue = "chapter";
+      this.iconPath = new vscode.ThemeIcon("code");
     }
   }
 
+  contextValue = this.type;
+
   getChapters() {
-    if (this.project) {
+    if (this.type === "gallery") {
       return Object.keys(this.project.parameters).map(
         (name) =>
           new GalleryTreeItem(
             this.extensionUri,
             vscode.TreeItemCollapsibleState.Collapsed,
-            name
+            name,
+            this.project,
+            "chapter"
           )
       );
+    } else if (this.type === "chapter") {
+      return this.project.parameters[this.name].map((sect) => {
+        const lastPart = sect.image_path.split("/");
+        return new GalleryTreeItem(
+          this.extensionUri,
+          vscode.TreeItemCollapsibleState.None,
+          lastPart[lastPart.length - 1].replace(".png", ""),
+          this.project,
+          "section"
+        );
+      });
     } else {
       return [];
     }
@@ -127,9 +145,10 @@ export class InstalledGalleriesExplorerProvider
           (prj) =>
             new GalleryTreeItem(
               this.extensionUri,
-              vscode.TreeItemCollapsibleState.None,
+              vscode.TreeItemCollapsibleState.Collapsed,
               prj.config.projectName,
-              prj
+              prj,
+              "gallery"
             )
         )
       );

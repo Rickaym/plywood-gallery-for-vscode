@@ -84,61 +84,61 @@ export async function fetchRemoteConfig(
   remoteRootDir: string,
   branch: string
 ) {
-  if (remoteRootDir.endsWith("/")) {
-    remoteRootDir = remoteRootDir.slice(0, remoteRootDir.length - 1);
-  }
   const contentUrl = `${remoteRootDir.replace(
     "github.com",
     "raw.githubusercontent.com"
-  )}/${branch}/${PROJECT_CONFIG_FILENAME}`;
+  )}/${PROJECT_CONFIG_FILENAME}`;
   Log.info(`Fetching entry configuration from content url "${contentUrl}"`);
-  try {
-    var res = await Axios.get(contentUrl);
-  } catch (e: any) {
-    if (e.response) {
-      vscode.window.showErrorMessage(
-        Log.error(
-          `${e.response.status}: ${e.response.statusText}.\nCouldn't fetch the gallery configuration.`
-        )
+  return Axios.get(contentUrl)
+    .catch((e: any) => {
+      if (e.response) {
+        vscode.window.showErrorMessage(
+          Log.error(
+            `${e.response.status}: ${e.response.statusText}.\nCouldn't fetch the gallery configuration. Double check your URL.`
+          )
+        );
+      } else {
+        throw e;
+      }
+      return;
+    })
+    .then((res) => {
+      if (!res) {
+        return;
+      }
+      Log.info(
+        `Content successfully fetched with status ${res.status}: ${res.statusText}`
       );
-    } else {
-      throw e;
-    }
-    return;
-  }
-
-  Log.info(
-    `Content successfully fetched with status ${res.status}: ${res.statusText}`
-  );
-  const yamlObj = reformatObject<HtmlConfig>(yaml.parse(res.data));
-  if (!isValidConfig(yamlObj)) {
-    vscode.window
-      .showErrorMessage(
-        Log.error(
-          "The gallery configuration for this repository has an invalid structure."
-        ),
-        "Report"
-      )
-      .then((r) => {
-        if (r === "Report") {
-          vscode.window.showInformationMessage(
-            `Report the issue for this repository at: ${remoteRootDir}/issues/new`
-          );
-        }
-      });
-    return;
-  }
-  const cacheDir = cacheDirectoryOf(
-    extensionUri,
-    yamlObj.projectName,
-    PROJECT_CONFIG_FILENAME
-  );
-  vscode.workspace.fs.writeFile(
-    cacheDir,
-    new TextEncoder().encode(yaml.stringify(yamlObj))
-  );
-  Log.info(`Cached remote configuration..`);
-  return yamlObj;
+      const yamlObj = reformatObject<HtmlConfig>(yaml.parse(res.data));
+      if (!isValidConfig(yamlObj)) {
+        vscode.window
+          .showErrorMessage(
+            Log.error(
+              "The gallery configuration for this repository has an invalid structure."
+            ),
+            "Report"
+          )
+          .then((r) => {
+            if (r === "Report") {
+              vscode.window.showInformationMessage(
+                `Report the issue for this repository at: ${remoteRootDir}/issues/new`
+              );
+            }
+          });
+        return;
+      }
+      const cacheDir = cacheDirectoryOf(
+        extensionUri,
+        yamlObj.projectName,
+        PROJECT_CONFIG_FILENAME
+      );
+      vscode.workspace.fs.writeFile(
+        cacheDir,
+        new TextEncoder().encode(yaml.stringify(yamlObj))
+      );
+      Log.info(`Cached remote configuration..`);
+      return yamlObj;
+    });
 }
 
 /**
@@ -260,9 +260,10 @@ export async function fetchRemoteAssets(
     increment: 5,
     message: Log.info(`Downloading gallery parameters.`),
   });
-  const res = await Axios.get(remoteRootDir + config.galleryParametersPath);
-
-  Log.error(`Fetching assets from remote ${res.config.url}.`);
+  const parameterPath = `${remoteRootDir}/${config.galleryParametersPath}`;
+  Log.info(`Fetching gallery parameters from URL ${parameterPath}.`);
+  const res = await Axios.get(parameterPath);
+  Log.error(`Fetching assets from remote ${res.config.url}`);
   if (res.status !== 200) {
     vscode.window.showErrorMessage(
       Log.error(
@@ -332,19 +333,21 @@ export async function fetchRemoteAssets(
       if (cancelled) {
         return;
       }
+      const imgDestUrl = `${remoteRootDir}/${imgPath}`;
       // Progress half considered finished when starting and after moved
       // will incur the other half
       progress.report({
         increment: perAssetDownload / 2,
         message: Log.info(`Downloading image "${imgName}".`),
       });
-      Axios.get(remoteRootDir + imgPath, {
+      Log.info(`Image destination URL is "${imgDestUrl}"`);
+      Axios.get(imgDestUrl, {
         responseType: "stream",
       })
         .then((res) => {
           if (res.status !== 200) {
             vscode.window.showErrorMessage(
-              `${res.statusText}: ${res.status}\nCouldn't download '${imgName}' file.`
+              `${res.statusText}: ${res.status}\nCouldn't download "${imgName}" file.`
             );
             removeProjectFolder(cacheDirectoryOf(extensionUri, projectName));
             return;
@@ -396,47 +399,8 @@ export async function fetchRemoteAssets(
             resolve();
             clearInterval(id);
           });
-      } else {
-        reject();
-        clearInterval(id);
       }
-    }, 1000);
-  });
-  return new Promise<void>((resolve, reject) => {
-    setTimeout(() => {
-      if (finished) {
-        progress.report({
-          increment: 5,
-          message: Log.info(
-            `Attempting to move cached download "${projectName}" into local.`
-          ),
-        });
-        moveCacheToLocal(extensionUri, projectName)
-          .then(() => {
-            progress.report({
-              increment: 5,
-              message: Log.info(
-                `Finished fetching remote GitHub gallery "${projectName}". You can cancel this message!`
-              ),
-            });
-            resolve();
-          })
-          .catch((reason) => {
-            Log.info(
-              `Failed fetching remote GitHub gallery "${projectName}" for ${reason}.`
-            );
-            progress.report({
-              increment: 5,
-              message:
-                `Failed fetching remote GitHub gallery "${projectName}".` +
-                ' Check the output channel "Plywood Gallery" for more information',
-            });
-            resolve();
-          });
-      } else {
-        reject();
-      }
-    }, 60000);
+    }, 2000);
   });
 }
 
