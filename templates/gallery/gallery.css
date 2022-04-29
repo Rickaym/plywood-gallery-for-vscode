@@ -39,7 +39,6 @@ h1, h2 {
   border-bottom-color: transparent;
   vertical-align: bottom;
   cursor: pointer;
-  min-width: 108px;
 }
 
 .header-label:hover {
@@ -58,6 +57,7 @@ h1, h2 {
   margin: 5px;
   vertical-align: middle;
   cursor: pointer;
+  min-width: 108px;
 }
 
 .header-button:hover {
@@ -67,4 +67,10 @@ h1, h2 {
 .gallery-title-container {
   display: flex;
   justify-content:space-between;
+}
+
+.gallery-version-info {
+  padding: 17px 0;
+  font-style: italic;
+  color: var(--vscode-gitDecoration-ignoredResourceForeground);
 }

@@ -7,12 +7,15 @@ import {
   cacheDirectoryOf,
   localDirectoryOf,
   getLocalProjects,
+  Project,
+  GalleryConfig,
 } from "./origin";
 import {
   loadPackageJson,
   Log,
   PACKAGE_JSON,
   makeShellDirectories,
+  prepareRepoUrl,
 } from "./globals";
 import { Gallery } from "./gallery";
 import {
@@ -21,7 +24,7 @@ import {
   InstalledGalleriesExplorerProvider,
 } from "./hub";
 
-async function importRemoteCommand(ctx: vscode.ExtensionContext) {
+async function importRemote(ctx: vscode.ExtensionContext) {
   let branch = "main";
   let urlInput = await vscode.window.showInputBox({
     title: "Raw GitHub Url (you can prefix an optional branch)",
@@ -31,20 +34,9 @@ async function importRemoteCommand(ctx: vscode.ExtensionContext) {
   if (!urlInput) {
     return;
   }
-  var url = urlInput.trim();
-  if (urlInput.includes(":") && urlInput.split(":").length - 1 === 2) {
-    const segs = urlInput.split(":");
-    if (segs[1]) {
-      branch = segs[0];
-      url = segs[1];
-    }
-  }
-  if (url.endsWith("/")) {
-    url = url.slice(0, url.length - 1);
-  }
-  url = `${url}/${branch}`;
+  let url = prepareRepoUrl(urlInput);
   Log.info(`Preparing to pull from raw content base repository ${url}`);
-  const config = await fetchRemoteConfig(ctx.extensionUri, url, branch);
+  const config = await fetchRemoteConfig(ctx.extensionUri, url);
   if (!config) {
     return;
   }
@@ -55,17 +47,11 @@ async function importRemoteCommand(ctx: vscode.ExtensionContext) {
       cancellable: true,
     },
     (progress, token) =>
-      fetchRemoteAssets(
-        ctx.extensionUri,
-        url.replace("github.com", "raw.githubusercontent.com"),
-        config,
-        progress,
-        token
-      )
+      fetchRemoteAssets(ctx.extensionUri, url, config, progress, token)
   );
 }
 
-async function importLocalCommand(ctx: vscode.ExtensionContext) {
+async function importLocal(ctx: vscode.ExtensionContext) {
   const url = await vscode.window.showInputBox({
     title: "Local Url",
   });
@@ -74,16 +60,17 @@ async function importLocalCommand(ctx: vscode.ExtensionContext) {
   }
 }
 
-async function openGalleryCommand(
+async function open(
   ctx: vscode.ExtensionContext,
   gallery: Gallery,
   projectName?: string
 ) {
   const projects = await getLocalProjects(ctx.extensionUri);
   if (!projectName) {
-    projectName = await vscode.window.showQuickPick(
-      projects.map((p) => p.config.projectName),
-      { title: "Choose a gallery to open" }
+    projectName = await getProjectChoice(
+      ctx.extensionUri,
+      "Choose a gallery to open",
+      projects
     );
     if (!projectName) {
       return;
@@ -98,7 +85,7 @@ async function openGalleryCommand(
   }
 }
 
-async function clearCacheCommand(ctx: vscode.ExtensionContext) {
+async function clearCache(ctx: vscode.ExtensionContext) {
   removeProjectFolder(cacheDirectoryOf(ctx.extensionUri, "")).then(() => {
     Log.info("Removed entire cache folder due to user request.");
     makeShellDirectories(ctx.extensionUri, ["local"]).then(() =>
@@ -107,7 +94,7 @@ async function clearCacheCommand(ctx: vscode.ExtensionContext) {
   });
 }
 
-async function resetCommand(ctx: vscode.ExtensionContext) {
+async function reset(ctx: vscode.ExtensionContext) {
   Log.info("User requested entire reset.");
   removeProjectFolder(cacheDirectoryOf(ctx.extensionUri, "")).then(() => {
     Log.info("Removed entire cache folder due to user request.");
@@ -120,16 +107,29 @@ async function resetCommand(ctx: vscode.ExtensionContext) {
   });
 }
 
-async function removeGalleryCommand(
+async function getProjectChoice(
+  extensionUri: vscode.Uri,
+  prompt: string,
+  projects?: Project[]
+) {
+  if (!projects) {
+    projects = await getLocalProjects(extensionUri);
+  }
+  return await vscode.window.showQuickPick(
+    projects.map((p) => p.config.projectName),
+    { title: prompt }
+  );
+}
+
+async function removeGallery(
   ctx: vscode.ExtensionContext,
   gallery?: GalleryTreeItem
 ) {
   var galleryName: string;
   if (!gallery) {
-    const projects = await getLocalProjects(ctx.extensionUri);
-    const gName = await vscode.window.showQuickPick(
-      projects.map((p) => p.config.projectName),
-      { title: "Choose a gallery to open" }
+    const gName = await getProjectChoice(
+      ctx.extensionUri,
+      "Choose a gallery to remove"
     );
     if (!gName) {
       return;
@@ -142,6 +142,55 @@ async function removeGalleryCommand(
   removeProjectFolder(localDirectoryOf(ctx.extensionUri, galleryName)).then(
     () => vscode.commands.executeCommand("plywood-gallery.Refresh")
   );
+}
+
+async function update(extensionUri: vscode.Uri, config: GalleryConfig) {
+  vscode.window
+    .showInformationMessage(
+      `Gallery "${config.projectName}" has a new update!`,
+      "Update Now",
+      "Remind Me Later"
+    )
+    .then((response) => {
+      if (!response) {
+        return;
+      } else if (response === "Update Now") {
+        vscode.window.withProgress(
+          {
+            location: vscode.ProgressLocation.Notification,
+            title: `Updating gallery ${config.projectName}`,
+            cancellable: true,
+          },
+          (progress, token) =>
+            fetchRemoteAssets(
+              extensionUri,
+              prepareRepoUrl(config.repositoryUrl),
+              config,
+              progress,
+              token
+            )
+        );
+      }
+    });
+}
+
+async function checkGalleryUpdate(
+  ctx: vscode.ExtensionContext,
+  gallery?: GalleryTreeItem
+) {
+  if (!gallery) {
+    return;
+  }
+  const rootUrl = prepareRepoUrl(gallery.project.config.repositoryUrl);
+  const config = await fetchRemoteConfig(ctx.extensionUri, rootUrl);
+  if (!config) {
+    return;
+  }
+  if (
+    config.userContentVersion !== gallery.project.config.userContentVersion
+  ) {
+    update(ctx.extensionUri, config);
+  }
 }
 
 export function activate(ctx: vscode.ExtensionContext) {
@@ -169,27 +218,33 @@ export function activate(ctx: vscode.ExtensionContext) {
   const gallery = new Gallery(ctx);
   ctx.subscriptions.push(
     vscode.commands.registerCommand("plywood-gallery.ImportRemote", () => {
-      importRemoteCommand(ctx);
+      importRemote(ctx);
     }),
     vscode.commands.registerCommand("plywood-gallery.ImportLocal", () => {
-      importLocalCommand(ctx);
+      importLocal(ctx);
     }),
     vscode.commands.registerCommand("plywood-gallery.Open", (...args) => {
-      openGalleryCommand(ctx, gallery, ...args);
+      open(ctx, gallery, ...args);
     }),
     vscode.commands.registerCommand("plywood-gallery.ClearCache", () => {
-      clearCacheCommand(ctx);
+      clearCache(ctx);
     }),
     vscode.commands.registerCommand("plywood-gallery.Reset", () => {
-      resetCommand(ctx);
+      reset(ctx);
     }),
     vscode.commands.registerCommand("plywood-gallery.Refresh", () => {
       treeViewProvider.refresh();
     }),
     vscode.commands.registerCommand(
+      "plywood-gallery.CheckGalleryUpdate",
+      () => {
+        checkGalleryUpdate(ctx);
+      }
+    ),
+    vscode.commands.registerCommand(
       "plywood-gallery.RemoveGallery",
       (...args) => {
-        removeGalleryCommand(ctx, ...args);
+        removeGallery(ctx, ...args);
       }
     )
   );

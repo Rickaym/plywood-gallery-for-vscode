@@ -187,3 +187,25 @@ export async function makeShellDirectories(
     );
   }
 }
+
+/**
+ * Turns a repository URL into a fetch-ready as raw.githubusercontent.com
+ * and resolves the intended branch of the URL.
+ */
+export function prepareRepoUrl(urlInput: string) {
+  let branch = "main";
+  let url = urlInput.trim();
+
+  if (urlInput.includes(":") && urlInput.split(":").length - 1 === 2) {
+    const segs = urlInput.split(":");
+    if (segs[1]) {
+      branch = segs[0];
+      url = segs[1];
+    }
+  }
+
+  if (url.endsWith("/")) {
+    url = url.slice(0, url.length - 1);
+  }
+  return `${url}/${branch}`.replace("github.com", "raw.githubusercontent.com");
+}

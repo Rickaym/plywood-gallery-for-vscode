@@ -13,7 +13,7 @@
   <body>
     <div class="gallery-title-container">
       <h1>{{ galleryTitle }}</h1>
-      <span>{{ version }}</span>
+      <span class="gallery-version-info">Content v{{ userContentVersion }}</span>
     </div>
     <p>
       {{ galleryDesc }}
@@ -23,16 +23,10 @@
     </p>
     <div class="gallery-header-controller">
       <div class="header-label-container">
-        <div class="header-label selected-header-label">
-          Gallery
-        </div>
-        <div class="header-label">
-          Settings
-        </div>
+        <div class="header-label selected-header-label">Gallery</div>
+        <div class="header-label">Settings</div>
       </div>
-      <div class="header-button">
-        Check For Updates
-      </div>
+      <div class="header-button" id="update">Check For Updates</div>
     </div>
     <div id="galleryObjects">{{ galleryObjects }}</div>
     <script nonce="{{ nonce }}" src="gallery.js"></script>

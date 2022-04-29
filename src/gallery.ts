@@ -8,7 +8,15 @@ export class Gallery {
   constructor(public readonly ctx: vscode.ExtensionContext) {
     vscode.window.onDidChangeActiveTextEditor(
       () => {
-        this.lastActiveEditor = vscode.window.activeTextEditor;
+        if (vscode.window.activeTextEditor) {
+          if (
+            this.lastActiveEditor &&
+            this.lastActiveEditor.document.fileName !==
+              vscode.window.activeTextEditor.document.fileName
+          ) {
+            this.lastActiveEditor = vscode.window.activeTextEditor;
+          }
+        }
       },
       null,
       ctx.subscriptions
@@ -63,15 +71,12 @@ export class Gallery {
       galleryDesc: project.config.description,
       galleryTitle: project.config.projectName,
       galleryFooter: project.config.customFooter,
-      version: "0.0.1",
+      userContentVersion: project.config.userContentVersion,
     });
 
     panel.webview.onDidReceiveMessage(
       (message) => {
-        if (
-          message.command === "update" ||
-          message.command === "download-again"
-        ) {
+        if (message.command === "update") {
           return;
         } else {
           this.insertCode(message.code);
@@ -104,6 +109,8 @@ export class Gallery {
       return vscode.window.showErrorMessage(
         "Select a document first and then use the buttons!"
       );
+    } else if (!this.lastActiveEditor) {
+      this.lastActiveEditor = lastEditor;
     }
 
     const before = lastEditor.document.getText(
@@ -114,7 +121,7 @@ export class Gallery {
     );
     // adaptive indentations
     if (!before.trim()) {
-      code = code.replace(/\n/g, "\n" + before);
+      code = `${code.replace(/\n/g, "\n" + before)}\n`;
     }
 
     lastEditor

@@ -33,6 +33,7 @@
     "onCommand:plywood-gallery.Reset",
     "onCommand:plywood-gallery.Refresh",
     "onCommand:plywood-gallery.RemoveGallery",
+    "onCommand:plywood-gallery.CheckGalleryUpdate",
     "onView:installed-galleries",
     "onView:recommended-galleries"
   ],
@@ -74,13 +75,30 @@
       "view/title": [
         {
           "command": "plywood-gallery.Refresh",
-          "group": "navigation"
+          "group": "navigation",
+          "when": "view == installed-galleries"
+        },
+        {
+          "command": "plywood-gallery.ImportLocal",
+          "group": "navigation",
+          "when": "view == installed-galleries"
+        },
+        {
+          "command": "plywood-gallery.ImportRemote",
+          "group": "navigation",
+          "when": "view == installed-galleries"
         }
       ],
       "view/item/context": [
         {
           "command": "plywood-gallery.RemoveGallery",
-          "when": "view == installed-galleries && viewItem == gallery"
+          "when": "view == installed-galleries && viewItem == gallery",
+          "group": "inline"
+        },
+        {
+          "command": "plywood-gallery.CheckGalleryUpdate",
+          "when": "view == installed-galleries && viewItem == gallery",
+          "group": "inline"
         }
       ]
     },
@@ -88,7 +106,7 @@
       {
         "command": "plywood-gallery.ImportRemote",
         "title": "Plywood Gallery: Import a Gallery from GitHub.",
-        "icon": "$(mark-github)"
+        "icon": "$(cloud-download)"
       },
       {
         "command": "plywood-gallery.ImportLocal",
@@ -120,6 +138,11 @@
         "title": "Plywood Gallery: Remove a downloaded gallery.",
         "shortTitle": "Delete",
         "icon": "$(trash)"
+      },
+      {
+        "command": "plywood-gallery.CheckGalleryUpdate",
+        "title": "Plywood Gallery: Check for gallery updates.",
+        "icon": "$(sync)"
       }
     ]
   },
