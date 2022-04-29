@@ -176,3 +176,14 @@ export async function loadPackageJson(extensionUri: vscode.Uri) {
       PACKAGE_JSON = JSON.parse(val.toString());
     });
 }
+
+export async function makeShellDirectories(
+  extensionUri: vscode.Uri,
+  dirNames: string[]
+) {
+  for (let name in dirNames) {
+    await vscode.workspace.fs.createDirectory(
+      vscode.Uri.joinPath(extensionUri, name)
+    );
+  }
+}

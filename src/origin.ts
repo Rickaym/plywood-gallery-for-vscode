@@ -160,7 +160,7 @@ function createProjectFolder(projectFolderPath: vscode.Uri) {
  * @param projectFolderPath
  */
 export async function removeProjectFolder(projectFolderPath: vscode.Uri) {
-  vscode.workspace.fs.delete(projectFolderPath, {
+  return vscode.workspace.fs.delete(projectFolderPath, {
     recursive: true,
   });
 }
@@ -383,6 +383,7 @@ export async function fetchRemoteAssets(
                 `Finished fetching remote GitHub gallery "${projectName}". You can cancel this message!`
               ),
             });
+            vscode.commands.executeCommand("plywood-gallery.Refresh");
             resolve();
             clearInterval(id);
           })

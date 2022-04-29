@@ -63,3 +63,8 @@ h1, h2 {
 .header-button:hover {
   background-color: var(--vscode-button-hoverBackground);
 }
+
+.gallery-title-container {
+  display: flex;
+  justify-content:space-between;
+}

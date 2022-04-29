@@ -118,6 +118,7 @@
       {
         "command": "plywood-gallery.RemoveGallery",
         "title": "Plywood Gallery: Remove a downloaded gallery.",
+        "shortTitle": "Delete",
         "icon": "$(trash)"
       }
     ]

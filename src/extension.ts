@@ -8,7 +8,12 @@ import {
   localDirectoryOf,
   getLocalProjects,
 } from "./origin";
-import { loadPackageJson, Log, PACKAGE_JSON } from "./globals";
+import {
+  loadPackageJson,
+  Log,
+  PACKAGE_JSON,
+  makeShellDirectories,
+} from "./globals";
 import { Gallery } from "./gallery";
 import {
   GalleryTreeItem,
@@ -94,23 +99,49 @@ async function openGalleryCommand(
 }
 
 async function clearCacheCommand(ctx: vscode.ExtensionContext) {
-  removeProjectFolder(cacheDirectoryOf(ctx.extensionUri, ""));
-  Log.info("Removed entire cache folder due to user request.");
+  removeProjectFolder(cacheDirectoryOf(ctx.extensionUri, "")).then(() => {
+    Log.info("Removed entire cache folder due to user request.");
+    makeShellDirectories(ctx.extensionUri, ["local"]).then(() =>
+      vscode.commands.executeCommand("plywood-gallery.Refresh")
+    );
+  });
 }
 
 async function resetCommand(ctx: vscode.ExtensionContext) {
   Log.info("User requested entire reset.");
-  removeProjectFolder(cacheDirectoryOf(ctx.extensionUri, ""));
-  Log.info("Removed entire cache folder due to user request.");
-  removeProjectFolder(localDirectoryOf(ctx.extensionUri, ""));
-  Log.info("Removed local project folders due to user request.");
+  removeProjectFolder(cacheDirectoryOf(ctx.extensionUri, "")).then(() => {
+    Log.info("Removed entire cache folder due to user request.");
+    removeProjectFolder(localDirectoryOf(ctx.extensionUri, "")).then(() => {
+      Log.info("Removed local project folders due to user request.");
+      makeShellDirectories(ctx.extensionUri, ["local", "cache"]).then(() =>
+        vscode.commands.executeCommand("plywood-gallery.Refresh")
+      );
+    });
+  });
 }
 
 async function removeGalleryCommand(
   ctx: vscode.ExtensionContext,
   gallery?: GalleryTreeItem
 ) {
-  vscode.window.showWarningMessage("This method has not been implemented");
+  var galleryName: string;
+  if (!gallery) {
+    const projects = await getLocalProjects(ctx.extensionUri);
+    const gName = await vscode.window.showQuickPick(
+      projects.map((p) => p.config.projectName),
+      { title: "Choose a gallery to open" }
+    );
+    if (!gName) {
+      return;
+    } else {
+      galleryName = gName;
+    }
+  } else {
+    galleryName = gallery.name;
+  }
+  removeProjectFolder(localDirectoryOf(ctx.extensionUri, galleryName)).then(
+    () => vscode.commands.executeCommand("plywood-gallery.Refresh")
+  );
 }
 
 export function activate(ctx: vscode.ExtensionContext) {
