@@ -30,10 +30,10 @@
     "onCommand:plywood-gallery.ImportLocal",
     "onCommand:plywood-gallery.Open",
     "onCommand:plywood-gallery.ClearCache",
-    "onCommand:plywood-gallery.Reset",
     "onCommand:plywood-gallery.Refresh",
     "onCommand:plywood-gallery.RemoveGallery",
     "onCommand:plywood-gallery.CheckGalleryUpdate",
+    "onCommand:plywood-gallery.ShowOutput",
     "onView:installed-galleries",
     "onView:recommended-galleries"
   ],
@@ -124,11 +124,6 @@
         "icon": "$(trash)"
       },
       {
-        "command": "plywood-gallery.Reset",
-        "title": "Plywood Gallery: Forcibly remove all downloaded galleries.",
-        "icon": "$(redo)"
-      },
-      {
         "command": "plywood-gallery.Refresh",
         "title": "Plywood Gallery: Refresh the tree view for present galleries.",
         "icon": "$(refresh)"
@@ -143,6 +138,10 @@
         "command": "plywood-gallery.CheckGalleryUpdate",
         "title": "Plywood Gallery: Check for gallery updates.",
         "icon": "$(sync)"
+      },
+      {
+        "command": "plywood-gallery.ShowOutput",
+        "title": "Plywood Gallery: Show output channel"
       }
     ]
   },

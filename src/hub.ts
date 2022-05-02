@@ -1,14 +1,18 @@
+/**
+ * Implements the gallery TreeView on the activity bar as well as the
+ * currently beta WebView integrated TreeView.
+*/
+
 import * as vscode from "vscode";
 import {
   getWebviewResFp,
   getWebviewResource,
   WebviewResources,
 } from "./globals";
-import { getLocalProjects, Project } from "./origin";
+import { getAllLocalGalleries, Project } from "./origin";
 import { TemplateEngine } from "./templateEngine";
 
 function tabularize(
-  extensionUri: vscode.Uri,
   htmlDoc: string,
   project: Project,
   webview: vscode.Webview
@@ -17,9 +21,6 @@ function tabularize(
     galleryPreviewImagePath: webview.asWebviewUri(project.previewImage),
     galleryTitle: project.config.projectName,
     galleryDesc: project.config.description.replace(new RegExp("\n", "g"), " "),
-    // chapters: Object.keys(project.parameters)
-    //   .map((chapter) => `<li>${chapter}</li>`)
-    //   .join("\n"),
   });
 }
 
@@ -43,10 +44,8 @@ export class HubWebviewProvider implements vscode.WebviewViewProvider {
         getWebviewResFp(this.ctx.extensionUri, "hub", "html", "hub_item")
       )
     ).toString();
-    let hubItemsStr = (await getLocalProjects(this.ctx.extensionUri))
-      .map((p) =>
-        tabularize(this.ctx.extensionUri, hubItemDoc, p, webviewView.webview)
-      )
+    let hubItemsStr = (await getAllLocalGalleries(this.ctx.extensionUri))
+      .map((p) => tabularize(hubItemDoc, p, webviewView.webview))
       .join("\n");
 
     webviewView.webview.html = await engine.render({
@@ -73,10 +72,14 @@ export class GalleryTreeItem extends vscode.TreeItem {
         command: "plywood-gallery.Open",
         arguments: [this.label],
       };
-      this.iconPath = vscode.Uri.joinPath(
-        this.extensionUri,
-        "assets/photo-gallery.png"
-      );
+      if (this.project.config.favicon) {
+        this.iconPath = this.project.iconPath();
+      } else {
+        this.iconPath = vscode.Uri.joinPath(
+          this.extensionUri,
+          "assets/photo-gallery.png"
+        );
+      }
     } else if (type === "chapter") {
       this.description = `${project.parameters[name].length} items`;
       this.iconPath = new vscode.ThemeIcon("book");
@@ -140,7 +143,7 @@ export class InstalledGalleriesExplorerProvider
     if (element) {
       return Promise.resolve(element.getChapters());
     } else {
-      return getLocalProjects(this.extensionUri).then((projects) =>
+      return getAllLocalGalleries(this.extensionUri).then((projects) =>
         projects.map(
           (prj) =>
             new GalleryTreeItem(

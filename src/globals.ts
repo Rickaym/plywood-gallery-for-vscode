@@ -1,7 +1,9 @@
 import * as vscode from "vscode";
 import * as fs from "fs";
+import { TextEncoder } from "util";
+import Axios, { ResponseType } from "axios";
 
-const logger = vscode.window.createOutputChannel("Plywood Gallery");
+export const LOGGER = vscode.window.createOutputChannel("Plywood Gallery");
 
 type FormatHandlerFn = (level: string, msg: string) => string;
 
@@ -16,7 +18,7 @@ export class Log {
     msg: string,
     handler: FormatHandlerFn = Log.defaultFormatHandler
   ) {
-    logger.appendLine(handler(level, msg));
+    LOGGER.appendLine(handler(level, msg));
     return msg;
   }
 
@@ -208,4 +210,49 @@ export function prepareRepoUrl(urlInput: string) {
     url = url.slice(0, url.length - 1);
   }
   return `${url}/${branch}`.replace("github.com", "raw.githubusercontent.com");
+}
+
+export function letOpenGallery(msg: string, projectName: string) {
+  vscode.window.showInformationMessage(msg, "Open", "Cancel").then((v) => {
+    if (v === "Open") {
+      vscode.commands.executeCommand("plywood-gallery.Open", projectName);
+    }
+  });
+}
+
+/**
+ * Returns an encoded Uint8Array.
+ *
+ * @param payload
+ * @returns
+ */
+export function asUint8Array(payload: string) {
+  return new TextEncoder().encode(payload);
+}
+
+/**
+ * Retrieves content from a URL using a GET request.
+ *
+ * @param url
+ * @param contentName
+ * @param responseType
+ * @returns
+ */
+export async function getContent(
+  url: string,
+  contentName: string,
+  responseType: ResponseType = "text"
+) {
+  return Axios.get(url, { responseType: responseType }).catch((e: any) => {
+    if (e.response) {
+      vscode.window.showErrorMessage(
+        Log.error(
+          `${e.response.status}: ${e.response.statusText}.\nCouldn't fetch ${contentName}..`
+        )
+      );
+    } else {
+      throw e;
+    }
+    return;
+  });
 }

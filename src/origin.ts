@@ -1,7 +1,11 @@
-import * as vscode from "vscode";
+/**
+ * Implements communications with external or remote galleries and
+ * any functionality that has to do with local gallery access,
+ * control and modifications.
+*/
 
+import * as vscode from "vscode";
 import * as yaml from "yaml";
-import { TextEncoder } from "util";
 import { createWriteStream, mkdirSync } from "fs";
 import {
   Log,
@@ -10,10 +14,12 @@ import {
   isValidPath,
   reformatObject,
   canonical,
-  prepareRepoUrl,
+  letOpenGallery,
+  asUint8Array,
+  getContent,
 } from "./globals";
-
 import Axios from "axios";
+import { addIndex, getIndex, getIndexFile, IndexMenu, IndexMenuJson } from "./indexing";
 
 export interface GalleryConfig {
   projectName: string;
@@ -25,6 +31,22 @@ export interface GalleryConfig {
   galleryParametersPath: string;
 }
 
+interface ImageParameter {
+  image_path: string;
+  celltype: string;
+  css: string;
+  code: string;
+}
+
+export type GalleryParams = { [category: string]: ImageParameter[] };
+
+/**
+ * Returns true if the runtime check on the provided object having
+ * all the keys specified.
+ *
+ * @param conf
+ * @returns
+ */
 export function isValidConfig(conf: any) {
   const mustKeys = [
     "projectName",
@@ -40,15 +62,6 @@ export function isValidConfig(conf: any) {
     return true;
   }
 }
-
-interface ImageParameter {
-  image_path: string;
-  celltype: string;
-  css: string;
-  code: string;
-}
-
-export type GalleryParams = { [category: string]: ImageParameter[] };
 
 /**
  * Fetches the local html_configuration file with the same project name
@@ -110,25 +123,10 @@ export async function fetchRemoteConfig(
     );
     vscode.workspace.fs.writeFile(
       cacheDir,
-      new TextEncoder().encode(yaml.stringify(yamlObj))
+      asUint8Array(yaml.stringify(yamlObj))
     );
     Log.info(`Cached remote configuration..`);
     return yamlObj;
-  });
-}
-
-async function getContent(url: string, contentName: string) {
-  return Axios.get(url).catch((e: any) => {
-    if (e.response) {
-      vscode.window.showErrorMessage(
-        Log.error(
-          `${e.response.status}: ${e.response.statusText}.\nCouldn't fetch ${contentName}. Double check your URL.`
-        )
-      );
-    } else {
-      throw e;
-    }
-    return;
   });
 }
 
@@ -157,53 +155,53 @@ export async function removeProjectFolder(projectFolderPath: vscode.Uri) {
 }
 
 /**
- * This directory is used as a final local repository for all successfuly
- * asset downloads.
+ * Returns a Uri to the local repository of the gallery.
  *
  * @param extensionUri
- * @param projectName
+ * @param galleryName
  */
 export function localDirectoryOf(
   extensionUri: vscode.Uri,
-  projectName: string,
+  galleryName: string,
   filename: string = ""
 ) {
   return vscode.Uri.joinPath(
     extensionUri,
     "local",
-    canonical(projectName),
+    canonical(galleryName),
     filename
   );
 }
 
 /**
- * This directory is used as a temporary cache repository during the download.
+ * Returns a Uri to the cache repository of the gallery.
  *
  * @param extensionUri
- * @param projectName
+ * @param galleryName
  * @returns
  */
 export function cacheDirectoryOf(
   extensionUri: vscode.Uri,
-  projectName: string,
+  galleryName: string,
   filename: string = ""
 ) {
   return vscode.Uri.joinPath(
     extensionUri,
     "cache",
-    canonical(projectName),
+    canonical(galleryName),
     filename
   );
 }
 
 /**
- * Move the project folder from the cache directory to the local directory.
+ * Moves the gallery folder from the cache directory to the
+ * local directory.
  *
  * @param extensionUri
- * @param projectName
+ * @param galleryName
  */
-async function moveCacheToLocal(extensionUri: vscode.Uri, projectName: string) {
-  const cacheDir = cacheDirectoryOf(extensionUri, projectName);
+async function moveCacheToLocal(extensionUri: vscode.Uri, galleryName: string) {
+  const cacheDir = cacheDirectoryOf(extensionUri, galleryName);
   if (!isValidPath(cacheDir.fsPath, false)) {
     const msg =
       "Operation failed, the cache folder has been emptied before saved.";
@@ -211,7 +209,7 @@ async function moveCacheToLocal(extensionUri: vscode.Uri, projectName: string) {
     vscode.window.showErrorMessage(msg);
     throw Error(msg);
   }
-  const localDir = localDirectoryOf(extensionUri, projectName);
+  const localDir = localDirectoryOf(extensionUri, galleryName);
   if (isValidPath(localDir.fsPath, false)) {
     removeProjectFolder(localDir);
   }
@@ -225,14 +223,15 @@ async function moveCacheToLocal(extensionUri: vscode.Uri, projectName: string) {
  * configuration.
  *
  * @param extensionUri
- * @param remoteRootDir
+ * @param remoteRootUrl
  * @param config
  * @param progress
  * @returns
  */
 export async function fetchRemoteAssets(
   extensionUri: vscode.Uri,
-  remoteRootDir: string,
+  remoteRootUrl: string,
+  repoUrl: string,
   config: GalleryConfig,
   progress: vscode.Progress<any>,
   token: vscode.CancellationToken
@@ -251,12 +250,27 @@ export async function fetchRemoteAssets(
     increment: 5,
     message: Log.info(`Downloading gallery parameters.`),
   });
-  const parameterPath = `${remoteRootDir}/${config.galleryParametersPath}`;
-  Log.info(`Fetching gallery parameters from URL ${parameterPath}.`);
-
-  const res = await getContent(parameterPath, "gallery parameters");
+  const paramUrl = `${remoteRootUrl}/${config.galleryParametersPath}`;
+  Log.info(`Fetching gallery parameters from URL ${paramUrl}.`);
+  const res = await getContent(paramUrl, "gallery parameters");
   if (!res) {
     return;
+  }
+  if (config.favicon) {
+    const iconUrl = `${remoteRootUrl}/${config.favicon}`;
+    Log.info(`Fetching gallery favicon from URL ${iconUrl}.`);
+    const ico = await getContent(iconUrl, "gallery favicon", "arraybuffer");
+    if (!ico) {
+      return;
+    }
+    await vscode.workspace.fs.writeFile(
+      cacheDirectoryOf(
+        extensionUri,
+        projectName,
+        config.favicon.split("/").pop()
+      ),
+      ico.data
+    );
   }
   Log.error(`Fetching assets from remote ${res.config.url}`);
   if (res.status !== 200) {
@@ -285,7 +299,7 @@ export async function fetchRemoteAssets(
       projectName,
       config.galleryParametersPath.split("/").pop()
     ),
-    new TextEncoder().encode(JSON.stringify(params))
+    asUint8Array(JSON.stringify(params))
   );
   progress.report({
     increment: 5,
@@ -332,7 +346,7 @@ export async function fetchRemoteAssets(
       if (cancelled) {
         return;
       }
-      const imgDestUrl = `${remoteRootDir}/${imgPath}`;
+      const imgDestUrl = `${remoteRootUrl}/${imgPath}`;
       // Progress half considered finished when starting and after moved
       // will incur the other half
       progress.report({
@@ -392,6 +406,15 @@ export async function fetchRemoteAssets(
                 `Finished fetching remote GitHub gallery "${projectName}". You can cancel this message!`
               ),
             });
+            addIndex(extensionUri, projectName, {
+              galleryConfigFp: "local",
+              repositoryUrl: repoUrl,
+              projectName: projectName,
+            });
+            letOpenGallery(
+              `Successfully downloaded "${projectName}".`,
+              projectName
+            );
             vscode.commands.executeCommand("plywood-gallery.Refresh");
             resolve();
             clearInterval(id);
@@ -406,6 +429,9 @@ export async function fetchRemoteAssets(
                 `Failed fetching remote GitHub gallery "${projectName}".` +
                 ' Check the output channel "Plywood Gallery" for more information',
             });
+            vscode.window.showErrorMessage(
+              `Failed to download "${projectName}".`
+            );
             resolve();
             clearInterval(id);
           });
@@ -414,48 +440,112 @@ export async function fetchRemoteAssets(
   });
 }
 
-export type Project = {
-  config: GalleryConfig;
-  parameters: GalleryParams;
-  previewImage: vscode.Uri;
-};
+export class Project {
+  constructor(
+    private readonly extensionUri: vscode.Uri,
+    public readonly config: GalleryConfig,
+    public readonly parameters: GalleryParams,
+    public readonly previewImage: vscode.Uri,
+    public readonly index: IndexMenu
+  ) {}
 
-export async function getLocalProjects(
+  iconPath() {
+    return this.index.galleryConfigFp === "local"
+      ? localDirectoryOf(
+          this.extensionUri,
+          this.config.projectName,
+          this.config.favicon.split("/").pop()
+        )
+      : vscode.Uri.joinPath(
+          vscode.Uri.file(this.index.galleryConfigFp),
+          `./../${this.config.favicon}`
+        );
+  }
+
+  imagePath(imagePath: string) {
+    return this.index.galleryConfigFp === "local"
+      ? localDirectoryOf(
+          this.extensionUri,
+          this.config.projectName,
+          imagePath.split("/").pop()
+        )
+      : vscode.Uri.joinPath(
+          vscode.Uri.file(this.index.galleryConfigFp),
+          `./../${imagePath}`
+        );
+  }
+}
+
+/**
+ * Returns a Project object if the given identifer is audited
+ * in the index file and all it's separate components can be fetched.
+ *
+ * @param extensionUri
+ * @param identifier
+ * @param idxMenuJson
+ * @returns
+ */
+export async function getLocalGallery(
+  extensionUri: vscode.Uri,
+  identifier: string,
+  idxMenuJson?: IndexMenuJson
+) {
+  const menu = await getIndex(extensionUri, identifier, idxMenuJson);
+  const configDir =
+    menu.galleryConfigFp === "local"
+      ? localDirectoryOf(
+          extensionUri,
+          menu.projectName,
+          PROJECT_CONFIG_FILENAME
+        )
+      : vscode.Uri.file(menu.galleryConfigFp);
+  const config = await fetchLocalConfig(extensionUri, configDir);
+  if (!config) {
+    return;
+  }
+  const galleryParamsDir =
+    menu.galleryConfigFp === "local"
+      ? localDirectoryOf(
+          extensionUri,
+          menu.projectName,
+          config.galleryParametersPath.split("/").pop()
+        )
+      : vscode.Uri.joinPath(configDir, `./../${config.galleryParametersPath}`);
+
+  const params: GalleryParams = JSON.parse(
+    (await vscode.workspace.fs.readFile(galleryParamsDir)).toString()
+  );
+
+  return new Project(
+    extensionUri,
+    config,
+    params,
+    localDirectoryOf(
+      extensionUri,
+      menu.projectName,
+      params[Object.keys(params)[0]][0].image_path.split("/").pop()
+    ),
+    menu
+  );
+}
+
+/**
+ * A short hand to getting all the galleries listed in the
+ * index file.
+ *
+ * @param extensionUri
+ * @returns
+ */
+export async function getAllLocalGalleries(
   extensionUri: vscode.Uri
 ): Promise<Project[]> {
-  const prjs = await vscode.workspace.fs.readDirectory(
-    localDirectoryOf(extensionUri, "")
-  );
-  var projects: Project[] = [];
-  for (let prj of prjs) {
-    const config = await fetchLocalConfig(
-      extensionUri,
-      localDirectoryOf(extensionUri, prj[0], PROJECT_CONFIG_FILENAME)
-    );
-    if (!config) {
-      continue;
-    } else {
-      const params: GalleryParams = JSON.parse(
-        (
-          await vscode.workspace.fs.readFile(
-            localDirectoryOf(
-              extensionUri,
-              prj[0],
-              config.galleryParametersPath.split("/").pop()
-            )
-          )
-        ).toString()
-      );
-      projects.push({
-        config: config,
-        parameters: params,
-        previewImage: localDirectoryOf(
-          extensionUri,
-          prj[0],
-          params[Object.keys(params)[0]][0].image_path.split("/").pop()
-        ),
-      });
+  var galleries: Project[] = [];
+  const idxMenu = await getIndexFile(extensionUri);
+  for (let identifier of Object.keys(idxMenu)) {
+    const prj = await getLocalGallery(extensionUri, identifier, idxMenu);
+    if (prj) {
+      galleries.push(prj);
     }
   }
-  return projects;
+  return galleries;
 }

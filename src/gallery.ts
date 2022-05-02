@@ -1,11 +1,25 @@
+/**
+ * Implements the core functionality of the gallery webview and all it's
+ * correspondence.
+*/
+
 import * as vscode from "vscode";
-import { getWebviewResource, WebviewResources } from "./globals";
-import { localDirectoryOf, Project } from "./origin";
+import {
+  getWebviewResFp,
+  getWebviewResource,
+  WebviewResources,
+} from "./globals";
+import { Project } from "./origin";
 
 import { TemplateEngine } from "./templateEngine";
 
 export class Gallery {
-  constructor(public readonly ctx: vscode.ExtensionContext) {
+  constructor(
+    public readonly subscriptions: any[],
+    private readonly extensionUri: vscode.Uri
+  ) {}
+
+  onActivate() {
     vscode.window.onDidChangeActiveTextEditor(
       () => {
         if (vscode.window.activeTextEditor) {
@@ -19,12 +33,13 @@ export class Gallery {
         }
       },
       null,
-      ctx.subscriptions
+      this.subscriptions
     );
   }
+
   private panel: vscode.WebviewPanel | undefined;
   private resource: WebviewResources = getWebviewResource(
-    this.ctx.extensionUri,
+    this.extensionUri,
     "gallery"
   );
 
@@ -51,20 +66,28 @@ export class Gallery {
     }
 
     let engine = new TemplateEngine(panel.webview, this.resource);
-    let galleryObjs = "";
-    Object.keys(project.parameters).forEach((title) => {
-      galleryObjs += `<h2>${title}</h2>`;
-      project.parameters[title].forEach((imgMap) => {
-        const code = imgMap.code.replace(/"/g, "'");
-        galleryObjs += `<img class="image-button" src=${panel.webview.asWebviewUri(
-          localDirectoryOf(
-            this.ctx.extensionUri,
-            project.config.projectName,
-            imgMap.image_path.split("/").pop()
-          )
-        )} style="${imgMap.css}" alt="${code}">`;
-      });
-    });
+    let galleryItemDoc = (
+      await vscode.workspace.fs.readFile(
+        getWebviewResFp(this.extensionUri, "gallery", "html", "gallery_item")
+      )
+    ).toString();
+
+    let galleryObjs = Object.keys(project.parameters)
+      .map((title) => {
+        return project.parameters[title]
+          .map((imgMap) => {
+            const code = imgMap.code.replace(/"/g, "'");
+            const imgPath = project.imagePath(imgMap.image_path);
+            return TemplateEngine.trueRender(galleryItemDoc, {
+              title: title,
+              imgSrc: panel.webview.asWebviewUri(imgPath),
+              imgCode: code,
+            });
+          })
+          .join("\n");
+      })
+      .join("\n");
+
     panel.iconPath = this.resource.icon;
     panel.webview.html = await engine.render({
       galleryObjects: galleryObjs,
@@ -83,14 +106,14 @@ export class Gallery {
         }
       },
       undefined,
-      this.ctx.subscriptions
+      this.subscriptions
     );
     panel.onDidDispose(
       () => {
         this.panel = undefined;
       },
       undefined,
-      this.ctx.subscriptions
+      this.subscriptions
     );
   }
 
