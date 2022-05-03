@@ -92,7 +92,7 @@
       "view/item/context": [
         {
           "command": "plywood-gallery.RemoveGallery",
-          "when": "view == installed-galleries && (viewItem == gitGallery || viewItem == localGallery)",
+          "when": "view == installed-galleries && viewItem == gitGallery || viewItem == internalGallery",
           "group": "inline"
         },
         {

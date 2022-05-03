@@ -7,7 +7,6 @@ import * as vscode from "vscode";
 import { asUint8Array } from "./globals";
 import { localDirectoryOf, removeProjectFolder } from "./origin";
 
-
 export type IndexMenuJson = { [n: string]: IndexMenu };
 
 export interface IndexMenu {
@@ -18,8 +17,10 @@ export interface IndexMenu {
   isExternal: boolean;
 }
 
-async function saveIndexFile(fp: vscode.Uri, payload: string) {
-  return vscode.workspace.fs.writeFile(fp, asUint8Array(payload));
+async function saveIndexFile(fp: vscode.Uri, json: IndexMenuJson) {
+  return vscode.workspace.fs
+    .writeFile(fp, asUint8Array(JSON.stringify(json)))
+    .then(() => vscode.commands.executeCommand("plywood-gallery.Refresh"));
 }
 
 /**
@@ -68,10 +69,7 @@ export async function addIndex(
 ) {
   return getIndexFile(extensionUri).then((idx) => {
     idx[menu.uri ? menu.uri : projectName] = menu;
-    return saveIndexFile(
-      localDirectoryOf(extensionUri, "index.json"),
-      JSON.stringify(idx)
-    );
+    return saveIndexFile(localDirectoryOf(extensionUri, "index.json"), idx);
   });
 }
 
@@ -79,19 +77,20 @@ export async function removeIndex(
   extensionUri: vscode.Uri,
   identifier: string
 ) {
-  return getIndexFile(extensionUri).then((idxMenu) => {
+  return getIndexFile(extensionUri).then(async (idxMenu) => {
     const menu = idxMenu[identifier];
     delete idxMenu[identifier];
-    saveIndexFile(
-      localDirectoryOf(extensionUri, "index.json"),
-      JSON.stringify(idxMenu)
-    );
     if (menu.isExternal) {
       return removeProjectFolder(
-        localDirectoryOf(extensionUri, identifier)
-      ).then(() => vscode.commands.executeCommand("plywood-gallery.Refresh"));
+        localDirectoryOf(extensionUri, menu.projectName)
+      ).then(() =>
+        saveIndexFile(localDirectoryOf(extensionUri, "index.json"), idxMenu)
+      );
     } else {
-      return vscode.commands.executeCommand("plywood-gallery.Refresh");
+      return saveIndexFile(
+        localDirectoryOf(extensionUri, "index.json"),
+        idxMenu
+      );
     }
   });
 }

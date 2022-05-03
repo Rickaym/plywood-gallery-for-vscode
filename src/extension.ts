@@ -87,10 +87,9 @@ async function importLocal(ctx: vscode.ExtensionContext) {
           version: conf.userContentVersion,
           isExternal: false,
         }).then(() => {
-          vscode.commands.executeCommand("plywood-gallery.Refresh");
           letOpenGallery(
             `Successfully imported local gallery "${conf.projectName}".`,
-            conf.projectName
+            fileUri.fsPath
           );
         });
       });
@@ -134,19 +133,6 @@ async function clearCache(ctx: vscode.ExtensionContext) {
   });
 }
 
-async function reset(ctx: vscode.ExtensionContext) {
-  Log.info("User requested entire reset.");
-  removeProjectFolder(cacheDirectoryOf(ctx.extensionUri, "")).then(() => {
-    Log.info("Removed entire cache folder due to user request.");
-    removeProjectFolder(localDirectoryOf(ctx.extensionUri, "")).then(() => {
-      Log.info("Removed local project folders due to user request.");
-      makeShellDirectories(ctx.extensionUri, ["local", "cache"]).then(() =>
-        vscode.commands.executeCommand("plywood-gallery.Refresh")
-      );
-    });
-  });
-}
-
 async function getProjectChoice(
   extensionUri: vscode.Uri,
   prompt: string,
@@ -164,7 +150,7 @@ async function removeGallery(
   ctx: vscode.ExtensionContext,
   gallery?: GalleryTreeItem
 ) {
-  var galleryName: string;
+  var identifier: string;
   if (!gallery) {
     const gName = await getProjectChoice(
       ctx.extensionUri,
@@ -173,12 +159,12 @@ async function removeGallery(
     if (!gName) {
       return;
     } else {
-      galleryName = gName;
+      identifier = gName;
     }
   } else {
-    galleryName = gallery.name;
+    identifier = gallery.project.index.uri;
   }
-  removeIndex(ctx.extensionUri, galleryName);
+  removeIndex(ctx.extensionUri, identifier);
 }
 
 async function showOutput(ctx: vscode.ExtensionContext) {

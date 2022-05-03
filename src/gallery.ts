@@ -38,29 +38,44 @@ export class Gallery {
 
   private lastActiveEditor: vscode.TextEditor | undefined;
 
+  createWebView(project: Project) {
+    return vscode.window.createWebviewPanel(
+      "plywood-gallery",
+      project.config.projectName,
+      {
+        viewColumn: vscode.ViewColumn.Beside,
+        preserveFocus: true,
+      },
+      {
+        localResourceRoots: project.index.isExternal
+          ? undefined
+          : [
+              vscode.Uri.joinPath(vscode.Uri.file(project.index.uri), "../"),
+              this.extensionUri,
+            ],
+        enableScripts: true,
+        enableForms: false,
+      }
+    );
+  }
+
   async show(project: Project) {
     if (this.panel) {
-      this.panel.title = project.config.projectName;
-      var panel = this.panel;
+      if (
+        !this.panel.webview.options.localResourceRoots &&
+        !project.index.isExternal
+      ) {
+        this.panel.dispose();
+        var panel = this.createWebView(project);
+        this.panel = panel;
+      } else {
+        this.panel.title = project.config.projectName;
+        var panel = this.panel;
+      }
     } else {
-      var panel = vscode.window.createWebviewPanel(
-        "plywood-gallery",
-        project.config.projectName,
-        {
-          viewColumn: vscode.ViewColumn.Beside,
-          preserveFocus: true,
-        },
-        {
-          localResourceRoots: project.index.isExternal
-            ? undefined
-            : [vscode.Uri.file(project.index.uri)],
-          enableScripts: true,
-          enableForms: false,
-        }
-      );
+      var panel = this.createWebView(project);
       this.panel = panel;
     }
-    this.panel.iconPath = project.iconPath;
 
     let engine = new TemplateEngine(panel.webview, this.resource);
     let galleryItemDoc = (
@@ -83,7 +98,7 @@ export class Gallery {
       })
       .join("\n");
 
-    panel.iconPath = this.resource.icon;
+    panel.iconPath = project.iconPath;
     panel.webview.html = await engine.render({
       galleryObjects: galleryObjs,
       galleryDesc: project.config.description,

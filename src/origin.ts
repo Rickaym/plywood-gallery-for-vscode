@@ -2,7 +2,7 @@
  * Implements communications with external or remote galleries and
  * any functionality that has to do with local gallery access,
  * control and modifications.
-*/
+ */
 
 import * as vscode from "vscode";
 import * as yaml from "yaml";
@@ -19,7 +19,13 @@ import {
   getContent,
 } from "./globals";
 import Axios from "axios";
-import { addIndex, getIndex, getIndexFile, IndexMenu, IndexMenuJson } from "./indexing";
+import {
+  addIndex,
+  getIndex,
+  getIndexFile,
+  IndexMenu,
+  IndexMenuJson,
+} from "./indexing";
 
 export interface GalleryConfig {
   projectName: string;
@@ -411,13 +417,13 @@ export async function fetchRemoteAssets(
               projectName: projectName,
               uri: repoUrl,
               version: config.userContentVersion,
-              isExternal: true
+              isExternal: true,
+            }).then(() => {
+              letOpenGallery(
+                `Successfully downloaded "${projectName}".`,
+                repoUrl
+              );
             });
-            letOpenGallery(
-              `Successfully downloaded "${projectName}".`,
-              projectName
-            );
-            vscode.commands.executeCommand("plywood-gallery.Refresh");
             resolve();
             clearInterval(id);
           })
@@ -460,7 +466,7 @@ export class Project {
         )
       : vscode.Uri.joinPath(
           vscode.Uri.file(this.index.galleryConfigFp),
-          `./../${this.config.favicon}`
+          `../${this.config.favicon}`
         );
   }
 
@@ -473,7 +479,7 @@ export class Project {
         )
       : vscode.Uri.joinPath(
           vscode.Uri.file(this.index.galleryConfigFp),
-          `./../${imagePath}`
+          `../${imagePath}`
         );
   }
 }
@@ -493,26 +499,20 @@ export async function getLocalGallery(
   idxMenuJson?: IndexMenuJson
 ) {
   const menu = await getIndex(extensionUri, identifier, idxMenuJson);
-  const configDir =
-    menu.isExternal
-      ? localDirectoryOf(
-          extensionUri,
-          menu.projectName,
-          PROJECT_CONFIG_FILENAME
-        )
-      : vscode.Uri.file(menu.galleryConfigFp);
+  const configDir = menu.isExternal
+    ? localDirectoryOf(extensionUri, menu.projectName, PROJECT_CONFIG_FILENAME)
+    : vscode.Uri.file(menu.galleryConfigFp);
   const config = await fetchLocalConfig(extensionUri, configDir);
   if (!config) {
     return;
   }
-  const galleryParamsDir =
-    menu.isExternal
-      ? localDirectoryOf(
-          extensionUri,
-          menu.projectName,
-          config.galleryParametersPath.split("/").pop()
-        )
-      : vscode.Uri.joinPath(configDir, `./../${config.galleryParametersPath}`);
+  const galleryParamsDir = menu.isExternal
+    ? localDirectoryOf(
+        extensionUri,
+        menu.projectName,
+        config.galleryParametersPath.split("/").pop()
+      )
+    : vscode.Uri.joinPath(configDir, `../${config.galleryParametersPath}`);
 
   const params: GalleryParams = JSON.parse(
     (await vscode.workspace.fs.readFile(galleryParamsDir)).toString()
