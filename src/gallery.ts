@@ -1,14 +1,10 @@
 /**
  * Implements the core functionality of the gallery webview and all it's
  * correspondence.
-*/
+ */
 
 import * as vscode from "vscode";
-import {
-  getWebviewResFp,
-  getWebviewResource,
-  WebviewResources,
-} from "./globals";
+import { getWebviewResFp, getWebviewResource } from "./globals";
 import { Project } from "./origin";
 
 import { TemplateEngine } from "./templateEngine";
@@ -38,10 +34,7 @@ export class Gallery {
   }
 
   private panel: vscode.WebviewPanel | undefined;
-  private resource: WebviewResources = getWebviewResource(
-    this.extensionUri,
-    "gallery"
-  );
+  private resource = getWebviewResource(this.extensionUri, "gallery");
 
   private lastActiveEditor: vscode.TextEditor | undefined;
 
@@ -58,33 +51,35 @@ export class Gallery {
           preserveFocus: true,
         },
         {
+          localResourceRoots: project.index.isExternal
+            ? undefined
+            : [vscode.Uri.file(project.index.uri)],
           enableScripts: true,
           enableForms: false,
         }
       );
       this.panel = panel;
     }
+    this.panel.iconPath = project.iconPath;
 
     let engine = new TemplateEngine(panel.webview, this.resource);
     let galleryItemDoc = (
       await vscode.workspace.fs.readFile(
-        getWebviewResFp(this.extensionUri, "gallery", "html", "gallery_item")
+        getWebviewResFp(this.extensionUri, "gallery", "html", "img_item")
       )
     ).toString();
-
     let galleryObjs = Object.keys(project.parameters)
       .map((title) => {
-        return project.parameters[title]
+        return `<h2>${title}</h2>\n${project.parameters[title]
           .map((imgMap) => {
             const code = imgMap.code.replace(/"/g, "'");
             const imgPath = project.imagePath(imgMap.image_path);
             return TemplateEngine.trueRender(galleryItemDoc, {
-              title: title,
               imgSrc: panel.webview.asWebviewUri(imgPath),
               imgCode: code,
             });
           })
-          .join("\n");
+          .join("\n")}`;
       })
       .join("\n");
 
@@ -96,7 +91,6 @@ export class Gallery {
       galleryFooter: project.config.customFooter,
       userContentVersion: project.config.userContentVersion,
     });
-
     panel.webview.onDidReceiveMessage(
       (message) => {
         if (message.command === "update") {
@@ -130,10 +124,8 @@ export class Gallery {
       : this.getPreviousEditor();
     if (!lastEditor) {
       return vscode.window.showErrorMessage(
-        "Select a document first and then use the buttons!"
+        "Select a document first and then use the gallery!"
       );
-    } else if (!this.lastActiveEditor) {
-      this.lastActiveEditor = lastEditor;
     }
 
     const before = lastEditor.document.getText(
@@ -144,7 +136,7 @@ export class Gallery {
     );
     // adaptive indentations
     if (!before.trim()) {
-      code = `${code.replace(/\n/g, "\n" + before)}\n`;
+      code = code.replace(/\n/g, "\n" + before);
     }
 
     lastEditor

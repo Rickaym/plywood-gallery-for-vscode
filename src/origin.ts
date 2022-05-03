@@ -408,8 +408,10 @@ export async function fetchRemoteAssets(
             });
             addIndex(extensionUri, projectName, {
               galleryConfigFp: "local",
-              repositoryUrl: repoUrl,
               projectName: projectName,
+              uri: repoUrl,
+              version: config.userContentVersion,
+              isExternal: true
             });
             letOpenGallery(
               `Successfully downloaded "${projectName}".`,
@@ -449,8 +451,8 @@ export class Project {
     public readonly index: IndexMenu
   ) {}
 
-  iconPath() {
-    return this.index.galleryConfigFp === "local"
+  get iconPath() {
+    return this.index.isExternal
       ? localDirectoryOf(
           this.extensionUri,
           this.config.projectName,
@@ -463,7 +465,7 @@ export class Project {
   }
 
   imagePath(imagePath: string) {
-    return this.index.galleryConfigFp === "local"
+    return this.index.isExternal
       ? localDirectoryOf(
           this.extensionUri,
           this.config.projectName,
@@ -492,7 +494,7 @@ export async function getLocalGallery(
 ) {
   const menu = await getIndex(extensionUri, identifier, idxMenuJson);
   const configDir =
-    menu.galleryConfigFp === "local"
+    menu.isExternal
       ? localDirectoryOf(
           extensionUri,
           menu.projectName,
@@ -504,7 +506,7 @@ export async function getLocalGallery(
     return;
   }
   const galleryParamsDir =
-    menu.galleryConfigFp === "local"
+    menu.isExternal
       ? localDirectoryOf(
           extensionUri,
           menu.projectName,

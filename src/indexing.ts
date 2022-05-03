@@ -1,22 +1,25 @@
 /**
  * Implements all the indexing related book-keeping of local
  * and downloaded repositories.
-*/
+ */
 
 import * as vscode from "vscode";
 import { asUint8Array } from "./globals";
 import { localDirectoryOf, removeProjectFolder } from "./origin";
 
+
 export type IndexMenuJson = { [n: string]: IndexMenu };
 
 export interface IndexMenu {
-  repositoryUrl?: string;
+  uri: string;
   galleryConfigFp: string;
   projectName: string;
+  version: string;
+  isExternal: boolean;
 }
 
-function saveIndexFile(fp: vscode.Uri, payload: string) {
-  vscode.workspace.fs.writeFile(fp, asUint8Array(payload));
+async function saveIndexFile(fp: vscode.Uri, payload: string) {
+  return vscode.workspace.fs.writeFile(fp, asUint8Array(payload));
 }
 
 /**
@@ -29,7 +32,7 @@ function saveIndexFile(fp: vscode.Uri, payload: string) {
  * @returns
  */
 export async function getIndexFile(
-  extensionUri: vscode.Uri,
+  extensionUri: vscode.Uri
 ): Promise<IndexMenuJson> {
   const idxFp = localDirectoryOf(extensionUri, "index.json");
   return vscode.workspace.fs.readFile(idxFp).then((val) => {
@@ -58,27 +61,37 @@ export async function getIndex(
   return indexMenuJson[identifier];
 }
 
-export function addIndex(
+export async function addIndex(
   extensionUri: vscode.Uri,
   projectName: string,
   menu: IndexMenu
 ) {
-  getIndexFile(extensionUri).then((val) => {
-    const idx = JSON.parse(val.toString());
-    idx[menu.repositoryUrl ? menu.repositoryUrl : projectName] = menu;
-    saveIndexFile(localDirectoryOf(extensionUri, "index.json"), JSON.stringify(idx));
+  return getIndexFile(extensionUri).then((idx) => {
+    idx[menu.uri ? menu.uri : projectName] = menu;
+    return saveIndexFile(
+      localDirectoryOf(extensionUri, "index.json"),
+      JSON.stringify(idx)
+    );
   });
 }
 
-export function removeIndex(extensionUri: vscode.Uri, identifier: string) {
-  getIndexFile(extensionUri).then((idxMenu) => {
+export async function removeIndex(
+  extensionUri: vscode.Uri,
+  identifier: string
+) {
+  return getIndexFile(extensionUri).then((idxMenu) => {
     const menu = idxMenu[identifier];
-    idxMenu.delete(identifier);
-    saveIndexFile(localDirectoryOf(extensionUri, "index.json"), JSON.stringify(idxMenu));
-    if (menu.galleryConfigFp === "local") {
-      removeProjectFolder(localDirectoryOf(extensionUri, identifier)).then(() =>
-        vscode.commands.executeCommand("plywood-gallery.Refresh")
-      );
+    delete idxMenu[identifier];
+    saveIndexFile(
+      localDirectoryOf(extensionUri, "index.json"),
+      JSON.stringify(idxMenu)
+    );
+    if (menu.isExternal) {
+      return removeProjectFolder(
+        localDirectoryOf(extensionUri, identifier)
+      ).then(() => vscode.commands.executeCommand("plywood-gallery.Refresh"));
+    } else {
+      return vscode.commands.executeCommand("plywood-gallery.Refresh");
     }
   });
 }

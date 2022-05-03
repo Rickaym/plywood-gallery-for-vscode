@@ -48,7 +48,7 @@ export function hasValidFileExtension(filename: string) {
  * Reformat all object keys to be in camelCase, values and
  * all other remains untouched.
  */
-export function reformatObject<T>(conf: T): T {
+export function reformatObject<T>(conf: any): T {
   Object.keys(conf).forEach((key) => {
     let segs = key.split("_");
     segs = segs.map((name) => {
@@ -57,8 +57,7 @@ export function reformatObject<T>(conf: T): T {
       }
       return name;
     });
-    const camelCaseKey = segs.join("");
-    conf[camelCaseKey] = conf[key];
+    conf[segs.join("")] = conf[key];
   });
   return conf;
 }
@@ -87,7 +86,7 @@ export type WebviewResources = {
 };
 
 /**
- * Get the resource file of a specific view.
+ * Returns the full file Uri of the webview resource.
  *
  * @param extensionUri
  * @param viewName
@@ -110,13 +109,6 @@ export function getWebviewResFp(
   );
 }
 
-/**
- * Used in webviews to load the html, js and css paths in one call.
- *
- * @param extensionUri
- * @param viewName
- * @returns WebviewResources
- */
 export function getWebviewResource(
   extensionUri: vscode.Uri,
   viewName: string
@@ -191,8 +183,11 @@ export async function makeShellDirectories(
 }
 
 /**
- * Turns a repository URL into a fetch-ready as raw.githubusercontent.com
+ * Returns a github repository Url as a githubusercontent url
  * and resolves the intended branch of the URL.
+ *
+ * @param urlInput
+ * @returns
  */
 export function prepareRepoUrl(urlInput: string) {
   let branch = "main";
@@ -212,32 +207,25 @@ export function prepareRepoUrl(urlInput: string) {
   return `${url}/${branch}`.replace("github.com", "raw.githubusercontent.com");
 }
 
-export function letOpenGallery(msg: string, projectName: string) {
+/**
+ * Presents the user an option to open or cancel a gallery
+ * with the provided identifier alongside a message.
+ *
+ * @param msg
+ * @param identifier
+ */
+export function letOpenGallery(msg: string, identifier: string) {
   vscode.window.showInformationMessage(msg, "Open", "Cancel").then((v) => {
     if (v === "Open") {
-      vscode.commands.executeCommand("plywood-gallery.Open", projectName);
+      vscode.commands.executeCommand("plywood-gallery.Open", identifier);
     }
   });
 }
 
-/**
- * Returns an encoded Uint8Array.
- *
- * @param payload
- * @returns
- */
 export function asUint8Array(payload: string) {
   return new TextEncoder().encode(payload);
 }
 
-/**
- * Retrieves content from a URL using a GET request.
- *
- * @param url
- * @param contentName
- * @param responseType
- * @returns
- */
 export async function getContent(
   url: string,
   contentName: string,

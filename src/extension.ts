@@ -6,15 +6,10 @@ import {
   removeProjectFolder,
   cacheDirectoryOf,
   localDirectoryOf,
-  getAllLocalGalleries,
   GalleryConfig,
   getLocalGallery,
 } from "./origin";
-import {
-  addIndex,
-  removeIndex,
-  getIndexFile,
-} from "./indexing";
+import { addIndex, removeIndex, getIndexFile } from "./indexing";
 import {
   loadPackageJson,
   Log,
@@ -48,8 +43,7 @@ async function importRemote(ctx: vscode.ExtensionContext) {
   if (!config) {
     return;
   }
-  const prjs = await getAllLocalGalleries(ctx.extensionUri);
-  if (prjs.find((v) => v.config.repositoryUrl === config.repositoryUrl)) {
+  if (Object.keys(await getIndexFile(ctx.extensionUri)).includes(repoUrl)) {
     const response = await vscode.window.showWarningMessage(
       "You're trying to reimport a pre-existing gallery, do you want to proceed?",
       "Continue",
@@ -66,7 +60,7 @@ async function importRemote(ctx: vscode.ExtensionContext) {
       cancellable: true,
     },
     (progress, token) =>
-      fetchRemoteAssets(ctx.extensionUri, repoUrl, url, config, progress, token)
+      fetchRemoteAssets(ctx.extensionUri, url, repoUrl, config, progress, token)
   );
 }
 
@@ -86,14 +80,19 @@ async function importLocal(ctx: vscode.ExtensionContext) {
         if (!conf) {
           return;
         }
-        addIndex(ctx.extensionUri, conf.projectName, {
+        addIndex(ctx.extensionUri, fileUri.fsPath, {
           galleryConfigFp: fileUri.fsPath,
           projectName: conf.projectName,
+          uri: fileUri.fsPath,
+          version: conf.userContentVersion,
+          isExternal: false,
+        }).then(() => {
+          vscode.commands.executeCommand("plywood-gallery.Refresh");
+          letOpenGallery(
+            `Successfully imported local gallery "${conf.projectName}".`,
+            conf.projectName
+          );
         });
-        letOpenGallery(
-          `Successfully import gallery "${conf.projectName}".`,
-          conf.projectName
-        );
       });
     });
 }
@@ -290,6 +289,7 @@ export function activate(ctx: vscode.ExtensionContext) {
       showOutput(ctx);
     })
   );
+  vscode.commands.executeCommand("plywood-gallery.CheckGalleryUpdate");
 }
 
 export function deactivate() {}

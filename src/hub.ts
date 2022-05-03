@@ -64,16 +64,16 @@ export class GalleryTreeItem extends vscode.TreeItem {
     public readonly type: string
   ) {
     super(name, collapsibleState);
-    if (type === "gallery") {
+    if (this.isGallery()) {
       this.description = `v${this.project.config.userContentVersion}`;
-      this.tooltip = this.project.config.repositoryUrl;
+      this.tooltip = this.project.index.uri;
       this.command = {
         title: "Plywood Gallery: Open a gallery webview.",
         command: "plywood-gallery.Open",
-        arguments: [this.label],
+        arguments: [this.project.index.uri],
       };
       if (this.project.config.favicon) {
-        this.iconPath = this.project.iconPath();
+        this.iconPath = this.project.iconPath;
       } else {
         this.iconPath = vscode.Uri.joinPath(
           this.extensionUri,
@@ -90,8 +90,12 @@ export class GalleryTreeItem extends vscode.TreeItem {
 
   contextValue = this.type;
 
+  isGallery() {
+    return ["gitGallery", "internalGallery"].includes(this.type);
+  }
+
   getChapters() {
-    if (this.type === "gallery") {
+    if (this.isGallery()) {
       return Object.keys(this.project.parameters).map(
         (name) =>
           new GalleryTreeItem(
@@ -151,7 +155,7 @@ export class InstalledGalleriesExplorerProvider
               vscode.TreeItemCollapsibleState.Collapsed,
               prj.config.projectName,
               prj,
-              "gallery"
+              prj.index.isExternal ? "gitGallery" : "internalGallery"
             )
         )
       );
