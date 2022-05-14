@@ -20,7 +20,7 @@ export class Gallery {
       () => {
         if (vscode.window.activeTextEditor) {
           if (
-            this.lastActiveEditor &&
+            !this.lastActiveEditor ||
             this.lastActiveEditor.document.fileName !==
               vscode.window.activeTextEditor.document.fileName
           ) {
@@ -59,8 +59,16 @@ export class Gallery {
     );
   }
 
-  async show(project: Project) {
-    if (this.panel) {
+  /**
+   * Create a new webview for a project and reveals on the sidebar.
+   * If `separate === true` the panel will be created separately
+   * otherwise, it will simply replace any preopened gallaries.
+   *
+   * @param project
+   * @param separate
+   */
+  async show(project: Project, separate: boolean = false) {
+    if (this.panel && !separate) {
       if (
         !this.panel.webview.options.localResourceRoots &&
         !project.index.isExternal
@@ -105,7 +113,9 @@ export class Gallery {
       galleryTitle: project.config.projectName,
       galleryFooter: project.config.customFooter,
       userContentVersion: project.config.userContentVersion,
+      destination: project.index.isExternal ? "Remote" : "Local",
     });
+
     panel.webview.onDidReceiveMessage(
       (message) => {
         if (message.command === "update") {
@@ -117,16 +127,53 @@ export class Gallery {
       undefined,
       this.subscriptions
     );
+
     panel.onDidDispose(
       () => {
-        this.panel = undefined;
+        if (panel === this.panel) {
+          this.panel = undefined;
+        }
       },
       undefined,
       this.subscriptions
     );
   }
 
-  getPreviousEditor() {
+  /**
+   * Fix indentations into user configured settings.
+   *
+   * @param code
+   * @param editor
+   * @returns string
+   */
+  static adaptiveIndent(code: string, editor: vscode.TextEditor) {
+    const before = editor.document.getText(
+      new vscode.Range(
+        new vscode.Position(editor.selection.active.line, 0),
+        editor.selection.active
+      )
+    );
+
+    var tab = "\t";
+    if (editor.options.insertSpaces && editor.options.tabSize) {
+      if (typeof editor.options.tabSize === "string") {
+        var tabSize = parseInt(editor.options.tabSize);
+      } else {
+        var tabSize = editor.options.tabSize;
+      }
+      tab = " ".repeat(tabSize);
+    }
+    if (!before.trim()) {
+      const replacable = `\n${tab}`;
+      code = code
+      .replace(/\n    /g, replacable)
+      .replace(/^\t/g, replacable)
+      .replace(/\n/g, "\n" + before);
+    }
+    return code;
+  }
+
+  static getPreviousEditor() {
     if (!vscode.window.activeTextEditor) {
       vscode.commands.executeCommand("workbench.action.focusPreviousGroup");
     }
@@ -136,23 +183,14 @@ export class Gallery {
   async insertCode(code: string) {
     const lastEditor = this.lastActiveEditor
       ? this.lastActiveEditor
-      : this.getPreviousEditor();
+      : Gallery.getPreviousEditor();
     if (!lastEditor) {
       return vscode.window.showErrorMessage(
         "Select a document first and then use the gallery!"
       );
     }
 
-    const before = lastEditor.document.getText(
-      new vscode.Range(
-        new vscode.Position(lastEditor.selection.active.line, 0),
-        lastEditor.selection.active
-      )
-    );
-    // adaptive indentations
-    if (!before.trim()) {
-      code = code.replace(/\n/g, "\n" + before);
-    }
+    code = Gallery.adaptiveIndent(code, lastEditor);
 
     lastEditor
       .edit((e) => {
@@ -169,8 +207,6 @@ export class Gallery {
       });
 
     if (lastEditor.document.fileName.endsWith(".ipynb")) {
-      // focusing on previous groups are a bit glitchy for notebooks in whatever
-      // reason
       await vscode.commands.executeCommand(
         "workbench.action.focusPreviousGroup"
       );

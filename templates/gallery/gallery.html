@@ -12,7 +12,9 @@
   <body>
     <div class="gallery-title-container">
       <h1>{{ galleryTitle }}</h1>
-      <span class="gallery-version-info">Content v{{ userContentVersion }}</span>
+      <span class="gallery-version-info" id="version-info">Content v{{ userContentVersion }}
+        <br>{{ destination }}
+      </span>
     </div>
     <p>
       {{ galleryDesc }}
@@ -23,7 +25,6 @@
     <div class="gallery-header-controller">
       <div class="header-label-container">
         <div class="header-label selected-header-label">Gallery</div>
-        <div class="header-label">Settings</div>
       </div>
       <div class="header-button" id="update">Check For Updates</div>
     </div>

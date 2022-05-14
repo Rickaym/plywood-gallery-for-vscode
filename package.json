@@ -28,7 +28,7 @@
   "activationEvents": [
     "onCommand:plywood-gallery.ImportRemote",
     "onCommand:plywood-gallery.ImportLocal",
-    "onCommand:plywood-gallery.Open",
+    "onCommand:plywood-gallery.OpenGallery",
     "onCommand:plywood-gallery.ClearCache",
     "onCommand:plywood-gallery.Refresh",
     "onCommand:plywood-gallery.RemoveGallery",
@@ -111,10 +111,10 @@
       {
         "command": "plywood-gallery.ImportLocal",
         "title": "Plywood Gallery: Import a Gallery from local disks.",
-        "icon": "$(file-directory-create)"
+        "icon": "$(desktop-download)"
       },
       {
-        "command": "plywood-gallery.Open",
+        "command": "plywood-gallery.OpenGallery",
         "title": "Plywood Gallery: Open a gallery webview.",
         "icon": "$(preview)"
       },

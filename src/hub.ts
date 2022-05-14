@@ -69,7 +69,7 @@ export class GalleryTreeItem extends vscode.TreeItem {
       this.tooltip = this.project.index.uri;
       this.command = {
         title: "Plywood Gallery: Open a gallery webview.",
-        command: "plywood-gallery.Open",
+        command: "plywood-gallery.OpenGallery",
         arguments: [this.project.index.uri],
       };
       if (this.project.config.favicon) {

@@ -1,7 +1,7 @@
-h1, h2 {
-  color: white;
+h1,
+h2 {
+  color: var(--vscode-button-foreground);
 }
-
 
 .image-button {
   opacity: 1;
@@ -26,7 +26,7 @@ h1, h2 {
   border-bottom: solid 1px;
   border-color: var(--vscode-focusBorder);
   display: flex;
-  justify-content:space-between;
+  justify-content: space-between;
 }
 
 .header-label-container {
@@ -46,18 +46,27 @@ h1, h2 {
 }
 
 .selected-header-label {
-  color: white;
-  border-bottom-color: white;
+  color: var(--vscode-button-foreground);
+  border-bottom-color: var(--vscode-button-foreground);
 }
 
 .header-button {
   padding: 2px 8px 2px 8px;
   background-color: var(--vscode-button-background);
-  color: white;
+  color: var(--vscode-button-foreground);
   margin: 5px;
   vertical-align: middle;
+  text-align: center;
   cursor: pointer;
-  min-width: 108px;
+}
+
+.header-button.disabled {
+  color: var(--vscode-disabledForeground);
+  background-color: var(--vscode-banner-background);
+}
+
+.header-button.disabled:hover {
+  background-color: var(--vscode-banner-background);
 }
 
 .header-button:hover {
@@ -66,7 +75,7 @@ h1, h2 {
 
 .gallery-title-container {
   display: flex;
-  justify-content:space-between;
+  justify-content: space-between;
 }
 
 .gallery-version-info {

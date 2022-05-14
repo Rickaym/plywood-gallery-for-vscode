@@ -356,11 +356,9 @@ export async function fetchRemoteAssets(
       // Progress half considered finished when starting and after moved
       // will incur the other half
       progress.report({
-        increment: perAssetDownload / 2,
-        message: Log.info(`Downloading image "${imgName}".`),
+        increment: perAssetDownload / 2
       });
-      Log.info(`Image destination URL is "${imgDestUrl}"`);
-
+      Log.info(`Downloading image "${imgName}" at "${imgDestUrl}"`);
       Axios.get(imgDestUrl, {
         responseType: "stream",
       })
@@ -391,6 +389,7 @@ export async function fetchRemoteAssets(
         });
     });
   });
+
   return new Promise<void>((resolve, reject) => {
     let id = setInterval(() => {
       if (cancelled) {

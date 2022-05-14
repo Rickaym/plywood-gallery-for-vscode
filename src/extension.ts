@@ -96,7 +96,7 @@ async function importLocal(ctx: vscode.ExtensionContext) {
     });
 }
 
-async function open(
+async function openGallery(
   ctx: vscode.ExtensionContext,
   gallery: Gallery,
   projectName?: string
@@ -250,8 +250,8 @@ export function activate(ctx: vscode.ExtensionContext) {
     vscode.commands.registerCommand("plywood-gallery.ImportLocal", () => {
       importLocal(ctx);
     }),
-    vscode.commands.registerCommand("plywood-gallery.Open", (...args) => {
-      open(ctx, gallery, ...args);
+    vscode.commands.registerCommand("plywood-gallery.OpenGallery", (...args) => {
+      openGallery(ctx, gallery, ...args);
     }),
     vscode.commands.registerCommand("plywood-gallery.ClearCache", () => {
       clearCache(ctx);

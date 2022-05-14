@@ -217,7 +217,7 @@ export function prepareRepoUrl(urlInput: string) {
 export function letOpenGallery(msg: string, identifier: string) {
   vscode.window.showInformationMessage(msg, "Open", "Cancel").then((v) => {
     if (v === "Open") {
-      vscode.commands.executeCommand("plywood-gallery.Open", identifier);
+      vscode.commands.executeCommand("plywood-gallery.OpenGallery", identifier);
     }
   });
 }
