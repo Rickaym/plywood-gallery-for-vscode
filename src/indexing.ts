@@ -65,12 +65,14 @@ export async function getIndex(
 export async function addIndex(
   extensionUri: vscode.Uri,
   projectName: string,
-  menu: IndexMenu
-) {
-  return getIndexFile(extensionUri).then((idx) => {
-    idx[menu.uri ? menu.uri : projectName] = menu;
-    return saveIndexFile(localDirectoryOf(extensionUri, "index.json"), idx);
-  });
+  menu: IndexMenu,
+  indexMenuJson?: IndexMenuJson
+  ) {
+  if (!indexMenuJson) {
+    indexMenuJson = await getIndexFile(extensionUri);
+  }
+  indexMenuJson[menu.uri ? menu.uri : projectName] = menu;
+  return saveIndexFile(localDirectoryOf(extensionUri, "index.json"), indexMenuJson);
 }
 
 export async function removeIndex(

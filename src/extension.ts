@@ -5,11 +5,10 @@ import {
   fetchRemoteAssets,
   removeProjectFolder,
   cacheDirectoryOf,
-  localDirectoryOf,
   GalleryConfig,
   getLocalGallery,
 } from "./origin";
-import { addIndex, removeIndex, getIndexFile } from "./indexing";
+import { addIndex, removeIndex, getIndexFile, getIndex } from "./indexing";
 import {
   loadPackageJson,
   Log,
@@ -43,15 +42,11 @@ async function importRemote(ctx: vscode.ExtensionContext) {
   if (!config) {
     return;
   }
-  if (Object.keys(await getIndexFile(ctx.extensionUri)).includes(repoUrl)) {
-    const response = await vscode.window.showWarningMessage(
-      "You're trying to reimport a pre-existing gallery, do you want to proceed?",
-      "Continue",
-      "Cancel"
-    );
-    if (response !== "Continue") {
-      return;
-    }
+  if (
+    Object.keys(await getIndexFile(ctx.extensionUri)).includes(repoUrl) &&
+    !(await approveRedundantImport())
+  ) {
+    return;
   }
   vscode.window.withProgress(
     {
@@ -62,6 +57,15 @@ async function importRemote(ctx: vscode.ExtensionContext) {
     (progress, token) =>
       fetchRemoteAssets(ctx.extensionUri, url, repoUrl, config, progress, token)
   );
+}
+
+async function approveRedundantImport() {
+  const response = await vscode.window.showWarningMessage(
+    "You're trying to reimport a pre-existing gallery, do you want to proceed?",
+    "Continue",
+    "Cancel"
+  );
+  return response === "Continue";
 }
 
 async function importLocal(ctx: vscode.ExtensionContext) {
@@ -76,17 +80,29 @@ async function importLocal(ctx: vscode.ExtensionContext) {
       } else {
         var fileUri = val[0];
       }
-      fetchLocalConfig(ctx.extensionUri, fileUri).then((conf) => {
+      fetchLocalConfig(ctx.extensionUri, fileUri).then(async (conf) => {
         if (!conf) {
           return;
         }
-        addIndex(ctx.extensionUri, fileUri.fsPath, {
-          galleryConfigFp: fileUri.fsPath,
-          projectName: conf.projectName,
-          uri: fileUri.fsPath,
-          version: conf.userContentVersion,
-          isExternal: false,
-        }).then(() => {
+        const idxFile = await getIndexFile(ctx.extensionUri);
+        if (
+          (await getIndex(ctx.extensionUri, fileUri.fsPath, idxFile)) &&
+          !(await approveRedundantImport())
+        ) {
+          return;
+        }
+        addIndex(
+          ctx.extensionUri,
+          fileUri.fsPath,
+          {
+            galleryConfigFp: fileUri.fsPath,
+            projectName: conf.projectName,
+            uri: fileUri.fsPath,
+            version: conf.userContentVersion,
+            isExternal: false,
+          },
+          idxFile
+        ).then(() => {
           letOpenGallery(
             `Successfully imported local gallery "${conf.projectName}".`,
             fileUri.fsPath
@@ -161,8 +177,13 @@ async function removeGallery(
     } else {
       identifier = gName;
     }
-  } else {
+  } else if (gallery.project) {
     identifier = gallery.project.index.uri;
+  } else {
+    vscode.window.showErrorMessage(
+      `You cannot remove this tree item type "${gallery.type}"!`
+    );
+    return;
   }
   removeIndex(ctx.extensionUri, identifier);
 }
@@ -206,7 +227,7 @@ async function checkGalleryUpdate(
   ctx: vscode.ExtensionContext,
   gallery?: GalleryTreeItem
 ) {
-  if (!gallery) {
+  if (!gallery || !gallery.project) {
     return;
   }
   const rootUrl = prepareRepoUrl(gallery.project.config.repositoryUrl);
@@ -250,9 +271,12 @@ export function activate(ctx: vscode.ExtensionContext) {
     vscode.commands.registerCommand("plywood-gallery.ImportLocal", () => {
       importLocal(ctx);
     }),
-    vscode.commands.registerCommand("plywood-gallery.OpenGallery", (...args) => {
-      openGallery(ctx, gallery, ...args);
-    }),
+    vscode.commands.registerCommand(
+      "plywood-gallery.OpenGallery",
+      (...args) => {
+        openGallery(ctx, gallery, ...args);
+      }
+    ),
     vscode.commands.registerCommand("plywood-gallery.ClearCache", () => {
       clearCache(ctx);
     }),

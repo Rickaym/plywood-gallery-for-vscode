@@ -79,6 +79,11 @@
           "when": "view == installed-galleries"
         },
         {
+          "command": "plywood-gallery.ShowOutput",
+          "group": "navigation",
+          "when": "view == installed-galleries"
+        },
+        {
           "command": "plywood-gallery.ImportLocal",
           "group": "navigation",
           "when": "view == installed-galleries"
@@ -141,7 +146,8 @@
       },
       {
         "command": "plywood-gallery.ShowOutput",
-        "title": "Plywood Gallery: Show output channel"
+        "title": "Plywood Gallery: Show output channel",
+        "icon": "$(output)"
       }
     ]
   },

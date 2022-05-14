@@ -6,7 +6,7 @@
 
 import * as vscode from "vscode";
 import * as yaml from "yaml";
-import { createWriteStream, mkdirSync } from "fs";
+import { createWriteStream, mkdirSync, WriteStream } from "fs";
 import {
   Log,
   PROJECT_CONFIG_FILENAME,
@@ -137,19 +137,6 @@ export async function fetchRemoteConfig(
 }
 
 /**
- * Create a project folder if and only if it dos not exist.
- *
- * @param projectFolderPath
- */
-function createProjectFolder(projectFolderPath: vscode.Uri) {
-  if (!isValidPath(projectFolderPath.fsPath, false)) {
-    mkdirSync(projectFolderPath.fsPath, {
-      recursive: true,
-    });
-  }
-}
-
-/**
  * Remove the downloaded project folder.
  *
  * @param projectFolderPath
@@ -222,6 +209,46 @@ async function moveCacheToLocal(extensionUri: vscode.Uri, galleryName: string) {
   return vscode.workspace.fs
     .copy(cacheDir, localDir)
     .then(() => removeProjectFolder(cacheDir));
+}
+
+async function downloadGalleryImage(
+  extensionUri: vscode.Uri,
+  imgDestUrl: string,
+  projectName: string,
+  imgName: string,
+  reportDownloaded: any
+) {
+  var resolve: any;
+  var reject: any;
+  const r = new Promise<void>((yes, no) => {
+    resolve = yes;
+    reject = no;
+  });
+  Axios.get(imgDestUrl, {
+    responseType: "stream",
+  })
+    .then((res) => {
+      if (res.status !== 200) {
+        vscode.window.showErrorMessage(
+          `${res.statusText}: ${res.status}\nCouldn't download "${imgName}" file.`
+        );
+        removeProjectFolder(cacheDirectoryOf(extensionUri, projectName));
+        return;
+      }
+      const writeStream = createWriteStream(
+        cacheDirectoryOf(extensionUri, projectName, imgName).fsPath
+      ).on("finish", () => {
+        reportDownloaded(imgName, true);
+        resolve();
+      });
+      res.data.pipe(writeStream);
+    })
+    .catch((reason) => {
+      Log.error(`A following image has failed to be downloaded for ${reason}.`);
+      reportDownloaded(imgName, false);
+      reject();
+    });
+  return r;
 }
 
 /**
@@ -318,20 +345,24 @@ export async function fetchRemoteAssets(
     imgsDownloaded += 1;
     progress.report({
       increment: perAssetDownload / 2,
-      message: ok
-        ? Log.info(
-            `[${imgsDownloaded}/${nImgs}] Image "${imgName}" downloaded.`
-          )
-        : Log.error(
-            `[${imgsDownloaded}/${nImgs}] Image "${imgName}" fail to download.`
-          ),
+      message: Log.info(`[${imgsDownloaded}/${nImgs}] Downloading image "${imgName}".`)
     });
+    if (ok) {
+      Log.info(
+        `[${imgsDownloaded}/${nImgs}] Succeeded downloading "${imgName}".`
+      );
+    } else {
+      Log.error(
+        `[${imgsDownloaded}/${nImgs}] Failed downloading "${imgName}".`
+      );
+    }
     if (imgsDownloaded === nImgs) {
       finished = true;
     }
   }
-  Object.keys(params).forEach((category) => {
-    params[category].forEach((param) => {
+
+  for (var category of Object.keys(params)) {
+    for (var param of params[category]) {
       const imgPath = param.image_path;
       const imgName = imgPath.split("/").pop();
       if (!imgName) {
@@ -353,42 +384,22 @@ export async function fetchRemoteAssets(
         return;
       }
       const imgDestUrl = `${remoteRootUrl}/${imgPath}`;
+      Log.info(`[${imgsDownloaded}/${nImgs}] Image "${imgName}" at url "${imgDestUrl}".`);
       // Progress half considered finished when starting and after moved
       // will incur the other half
       progress.report({
-        increment: perAssetDownload / 2
+        increment: perAssetDownload / 2,
+        message: Log.info(`[${imgsDownloaded}/${nImgs}] Downloading image "${imgName}".`)
       });
-      Log.info(`Downloading image "${imgName}" at "${imgDestUrl}"`);
-      Axios.get(imgDestUrl, {
-        responseType: "stream",
-      })
-        .then((res) => {
-          if (res.status !== 200) {
-            vscode.window.showErrorMessage(
-              `${res.statusText}: ${res.status}\nCouldn't download "${imgName}" file.`
-            );
-            removeProjectFolder(cacheDirectoryOf(extensionUri, projectName));
-            return;
-          }
-          const writeStream = createWriteStream(
-            cacheDirectoryOf(extensionUri, projectName, imgName).fsPath
-          )
-            .on("finish", () => reportDownloaded(imgName, true))
-            .on("close", () => {
-              if (cancelled) {
-                writeStream.destroy();
-              }
-            });
-          res.data.pipe(writeStream);
-        })
-        .catch((reason) => {
-          Log.error(
-            `A following image has failed to be downloaded for ${reason}.`
-          );
-          reportDownloaded(imgName, false);
-        });
-    });
-  });
+      await downloadGalleryImage(
+        extensionUri,
+        imgDestUrl,
+        projectName,
+        imgName,
+        reportDownloaded
+      );
+    }
+  }
 
   return new Promise<void>((resolve, reject) => {
     let id = setInterval(() => {
@@ -439,7 +450,7 @@ export async function fetchRemoteAssets(
             vscode.window.showErrorMessage(
               `Failed to download "${projectName}".`
             );
-            resolve();
+            reject();
             clearInterval(id);
           });
       }
@@ -538,13 +549,14 @@ export async function getLocalGallery(
  * @returns
  */
 export async function getAllLocalGalleries(
-  extensionUri: vscode.Uri
+  extensionUri: vscode.Uri,
+  isExternal: boolean | null = null
 ): Promise<Project[]> {
   var galleries: Project[] = [];
   const idxMenu = await getIndexFile(extensionUri);
   for (let identifier of Object.keys(idxMenu)) {
     const prj = await getLocalGallery(extensionUri, identifier, idxMenu);
-    if (prj) {
+    if (prj && prj.index.isExternal === isExternal) {
       galleries.push(prj);
     }
   }

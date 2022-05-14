@@ -4,7 +4,7 @@
  */
 
 import * as vscode from "vscode";
-import { getWebviewResFp, getWebviewResource } from "./globals";
+import { getWebviewResFp, getWebviewResource, Log } from "./globals";
 import { Project } from "./origin";
 
 import { TemplateEngine } from "./templateEngine";
@@ -15,18 +15,23 @@ export class Gallery {
     private readonly extensionUri: vscode.Uri
   ) {}
 
+  private static readonly disallowedSchemes = ["output"];
+
   onActivate() {
     vscode.window.onDidChangeActiveTextEditor(
       () => {
-        if (vscode.window.activeTextEditor) {
-          if (
-            !this.lastActiveEditor ||
-            this.lastActiveEditor.document.fileName !==
-              vscode.window.activeTextEditor.document.fileName
-          ) {
-            this.lastActiveEditor = vscode.window.activeTextEditor;
-          }
+        if (
+          !vscode.window.activeTextEditor ||
+          Gallery.disallowedSchemes.includes(
+            vscode.window.activeTextEditor.document.uri.scheme
+          )
+        ) {
+          return;
         }
+        this.lastActiveEditor = vscode.window.activeTextEditor;
+        Log.info(
+          `Current insertable text document changed to "${this.lastActiveEditor.document.fileName}"`
+        );
       },
       null,
       this.subscriptions
@@ -68,6 +73,7 @@ export class Gallery {
    * @param separate
    */
   async show(project: Project, separate: boolean = false) {
+    Log.info(`Initializing a webview for "${project.index.projectName}"`);
     if (this.panel && !separate) {
       if (
         !this.panel.webview.options.localResourceRoots &&
@@ -130,6 +136,7 @@ export class Gallery {
 
     panel.onDidDispose(
       () => {
+        Log.info(`Disposed webview for "${project.index.projectName}".`);
         if (panel === this.panel) {
           this.panel = undefined;
         }
@@ -137,6 +144,7 @@ export class Gallery {
       undefined,
       this.subscriptions
     );
+    Log.info(`Shown webview for "${project.index.projectName}".`);
   }
 
   /**
@@ -166,9 +174,9 @@ export class Gallery {
     if (!before.trim()) {
       const replacable = `\n${tab}`;
       code = code
-      .replace(/\n    /g, replacable)
-      .replace(/^\t/g, replacable)
-      .replace(/\n/g, "\n" + before);
+        .replace(/\n    /g, replacable)
+        .replace(/^\t/g, replacable)
+        .replace(/\n/g, "\n" + before);
     }
     return code;
   }
@@ -190,31 +198,24 @@ export class Gallery {
       );
     }
 
+    Log.info(`Inserting code into "${lastEditor.document.fileName}".`);
     code = Gallery.adaptiveIndent(code, lastEditor);
 
     lastEditor
       .edit((e) => {
         e.insert(lastEditor.selection.active, code);
       })
-      .then((e) => {
-        // reveal entirity of code
-        lastEditor.revealRange(
-          new vscode.Range(
-            lastEditor.selection.active,
-            lastEditor.selection.active
-          )
-        );
+      .then(() => {
+        vscode.commands
+          .executeCommand("workbench.action.focusPreviousGroup")
+          .then(() =>
+            lastEditor.revealRange(
+              new vscode.Range(
+                lastEditor.selection.active,
+                lastEditor.selection.active
+              )
+            )
+          );
       });
-
-    if (lastEditor.document.fileName.endsWith(".ipynb")) {
-      await vscode.commands.executeCommand(
-        "workbench.action.focusPreviousGroup"
-      );
-    } else {
-      vscode.window.showTextDocument(
-        lastEditor.document,
-        lastEditor.viewColumn
-      );
-    }
   }
 }

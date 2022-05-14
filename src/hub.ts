@@ -1,7 +1,7 @@
 /**
  * Implements the gallery TreeView on the activity bar as well as the
  * currently beta WebView integrated TreeView.
-*/
+ */
 
 import * as vscode from "vscode";
 import {
@@ -11,6 +11,13 @@ import {
 } from "./globals";
 import { getAllLocalGalleries, Project } from "./origin";
 import { TemplateEngine } from "./templateEngine";
+
+const externalGalleryType = "gitGallery";
+const internalGalleryType = "internalGallery";
+const chapterType = "chapter";
+const sectionType = "section";
+const localCategoryType = "localListing";
+const remoteCategoryType = "remoteListing";
 
 function tabularize(
   htmlDoc: string,
@@ -60,11 +67,11 @@ export class GalleryTreeItem extends vscode.TreeItem {
     private extensionUri: vscode.Uri,
     public collapsibleState: vscode.TreeItemCollapsibleState,
     public readonly name: string,
-    public readonly project: Project,
-    public readonly type: string
+    public readonly type: string,
+    public readonly project?: Project
   ) {
     super(name, collapsibleState);
-    if (this.isGallery()) {
+    if (this.isGallery() && this.project) {
       this.description = `v${this.project.config.userContentVersion}`;
       this.tooltip = this.project.index.uri;
       this.command = {
@@ -80,41 +87,71 @@ export class GalleryTreeItem extends vscode.TreeItem {
           "assets/photo-gallery.png"
         );
       }
-    } else if (type === "chapter") {
-      this.description = `${project.parameters[name].length} items`;
+    } else if (type === chapterType && this.project) {
+      this.description = `${this.project.parameters[name].length} items`;
       this.iconPath = new vscode.ThemeIcon("book");
-    } else {
+    } else if (type === sectionType) {
       this.iconPath = new vscode.ThemeIcon("code");
+    } else if (type === remoteCategoryType) {
+      this.iconPath = new vscode.ThemeIcon("github");
+    } else {
+      this.iconPath = new vscode.ThemeIcon("device-desktop");
     }
   }
 
   contextValue = this.type;
 
   isGallery() {
-    return ["gitGallery", "internalGallery"].includes(this.type);
+    return [externalGalleryType, internalGalleryType].includes(this.type);
+  }
+
+  isCategory() {
+    return [remoteCategoryType, localCategoryType].includes(this.type);
+  }
+
+  getChildren() {
+    if (this.isCategory()) {
+      return getAllLocalGalleries(
+        this.extensionUri,
+        this.type === remoteCategoryType
+      ).then((projects) =>
+        projects.map(
+          (prj) =>
+            new GalleryTreeItem(
+              this.extensionUri,
+              vscode.TreeItemCollapsibleState.Collapsed,
+              prj.config.projectName,
+              prj.index.isExternal ? externalGalleryType : internalGalleryType,
+              prj
+            )
+        )
+      );
+    } else {
+      return this.getChapters();
+    }
   }
 
   getChapters() {
-    if (this.isGallery()) {
+    if (this.isGallery() && this.project) {
       return Object.keys(this.project.parameters).map(
         (name) =>
           new GalleryTreeItem(
             this.extensionUri,
             vscode.TreeItemCollapsibleState.Collapsed,
             name,
-            this.project,
-            "chapter"
+            chapterType,
+            this.project
           )
       );
-    } else if (this.type === "chapter") {
+    } else if (this.type === chapterType && this.project) {
       return this.project.parameters[this.name].map((sect) => {
         const lastPart = sect.image_path.split("/");
         return new GalleryTreeItem(
           this.extensionUri,
           vscode.TreeItemCollapsibleState.None,
           lastPart[lastPart.length - 1].replace(".png", ""),
-          this.project,
-          "section"
+          sectionType,
+          this.project
         );
       });
     } else {
@@ -126,7 +163,23 @@ export class GalleryTreeItem extends vscode.TreeItem {
 export class InstalledGalleriesExplorerProvider
   implements vscode.TreeDataProvider<GalleryTreeItem>
 {
-  constructor(private extensionUri: vscode.Uri) {}
+  private categoryNodes: GalleryTreeItem[];
+  constructor(private extensionUri: vscode.Uri) {
+    this.categoryNodes = [
+      new GalleryTreeItem(
+        this.extensionUri,
+        vscode.TreeItemCollapsibleState.Collapsed,
+        "Remote Galleries",
+        remoteCategoryType
+      ),
+      new GalleryTreeItem(
+        this.extensionUri,
+        vscode.TreeItemCollapsibleState.Collapsed,
+        "Local Galleries",
+        localCategoryType
+      ),
+    ];
+  }
 
   private _onDidChangeTreeData: vscode.EventEmitter<
     GalleryTreeItem | undefined | void
@@ -145,20 +198,9 @@ export class InstalledGalleriesExplorerProvider
 
   async getChildren(element?: GalleryTreeItem): Promise<GalleryTreeItem[]> {
     if (element) {
-      return Promise.resolve(element.getChapters());
+      return Promise.resolve(element.getChildren());
     } else {
-      return getAllLocalGalleries(this.extensionUri).then((projects) =>
-        projects.map(
-          (prj) =>
-            new GalleryTreeItem(
-              this.extensionUri,
-              vscode.TreeItemCollapsibleState.Collapsed,
-              prj.config.projectName,
-              prj,
-              prj.index.isExternal ? "gitGallery" : "internalGallery"
-            )
-        )
-      );
+      return this.categoryNodes;
     }
   }
 }

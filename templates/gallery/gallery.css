@@ -60,22 +60,24 @@ h2 {
   cursor: pointer;
 }
 
+.header-button:hover {
+  background-color: var(--vscode-button-hoverBackground);
+}
+
 .header-button.disabled {
   color: var(--vscode-disabledForeground);
   background-color: var(--vscode-banner-background);
+  cursor: auto;
 }
 
 .header-button.disabled:hover {
   background-color: var(--vscode-banner-background);
 }
 
-.header-button:hover {
-  background-color: var(--vscode-button-hoverBackground);
-}
-
 .gallery-title-container {
   display: flex;
   justify-content: space-between;
+  color: var(--vscode-foreground);
 }
 
 .gallery-version-info {
