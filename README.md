@@ -4,7 +4,7 @@
 <a href="https://marketplace.visualstudio.com/items?itemName=Rickaym.plywood-gallery"><img alt="Extension Version" src="https://img.shields.io/visual-studio-marketplace/v/Rickaym.plywood-gallery?style=for-the-badge&logo=verizon&logoColor=white"></a>
 <a href="https://discord.gg/UmnzdPgn6g"><img src="https://img.shields.io/badge/GET SUPPORT-DISCORD-orange?style=for-the-badge&logo=discord&logoColor=white&color=5865F2"></a>
 
-A utility Extension to visualize code snippets for Graphical Frameworks.
+A utility extension to insert code snippets from the project [*plywood-gallery*](https://github.com/kolibril13/plywood-gallery/)  into VS Code.
 
 ## Key Features
 
@@ -68,21 +68,17 @@ Importing a gallery inside a batch simply changes the protocol from picking a ce
 `gallery_config.yaml` file to picking the specific config file for the
 gallery.
 
-## Known Issues
-
-###### No Known Issues...
-
 ## Release Notes
 
 Pre-release!
 
 ### 0.0.1
 
-Initial release of Plywood Gallery
+Initial release of the Plywood Gallery Extension
 
 ## Credits
 
-- [kolibril13](https://github.com/kolibril13) for building the relevant [libraries](https://github.com/kolibril13/plywood-gallery) and [templates]().
+- [kolibril13](https://github.com/kolibril13) for building the [plywood gallery core library](https://github.com/kolibril13/plywood-gallery) and [a minimal example](https://github.com/kolibril13/plywood-gallery-minimal-example).
 - <a href="https://www.flaticon.com/free-icons/picture" title="picture icons">Picture icons created by Pixel perfect - Flaticon</a>
 - <a href="https://www.flaticon.com/free-icons/photo" title="photo icons">Photo icons created by Andrean Prabowo - Flaticon</a>
 - <a href="https://www.flaticon.com/free-icons/wood" title="wood icons">Wood icons created by Freepik - Flaticon</a>
