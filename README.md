@@ -15,7 +15,7 @@ publish them to Github where users can download and import them. Once a gallery 
 imported via [these steps](#importing-galleries), a webview will be installed for the
 imported gallery whereby using it is as easy as pressing on the images of the objects that
 you want the code equivalent for.
-<br><br><img src="https://raw.githubusercontent.com/Rickaym/Plywood-Gallery-For-VSCode/master/media/usage.gif" width="200"><br><br>
+<br><br><img src="https://raw.githubusercontent.com/Rickaym/Plywood-Gallery-For-VSCode/master/media/usage.gif" width="600"><br><br>
 
 
 ## Introduction
