@@ -7,6 +7,8 @@ import {
   cacheDirectoryOf,
   GalleryConfig,
   getLocalGallery,
+  remoteHasBatchConfig,
+  fetchRemoteConfigFromBatch,
 } from "./origin";
 import { addIndex, removeIndex, getIndexFile, getIndex } from "./indexing";
 import {
@@ -17,6 +19,7 @@ import {
   makeShellDirectories,
   prepareRepoUrl,
   letOpenGallery,
+  PROJECT_BATCHCONFIG_FILENAME,
 } from "./globals";
 import { Gallery } from "./gallery";
 import {
@@ -25,7 +28,10 @@ import {
   InstalledGalleriesExplorerProvider,
 } from "./hub";
 
-async function importRemote(ctx: vscode.ExtensionContext) {
+async function importRemote(
+  ctx: vscode.ExtensionContext,
+  rootPerm: boolean = false
+) {
   let urlInput = await vscode.window.showInputBox({
     title: "Raw GitHub Url (you can prefix an optional branch)",
     placeHolder: "main:https://github.com/Rickaym/Plywood-Gallery-For-VSCode",
@@ -37,11 +43,23 @@ async function importRemote(ctx: vscode.ExtensionContext) {
     var repoUrl = urlInput;
   }
   let url = prepareRepoUrl(urlInput);
-  Log.info(`Preparing to pull from raw content base repository ${url}`);
-  const config = await fetchRemoteConfig(ctx.extensionUri, url);
-  if (!config) {
+  if (!rootPerm && !url.startsWith("https://raw.githubusercontent.com/kolibril13")) {
+    vscode.window.showErrorMessage(
+      Log.info("You cannot download this gallery for security reasons.")
+    );
     return;
   }
+  Log.info(`Preparing to pull from raw content base repository ${url}`);
+
+  if (await remoteHasBatchConfig(url)) {
+    var dlConfig = await fetchRemoteConfigFromBatch(ctx.extensionUri, url);
+  } else {
+    var dlConfig = await fetchRemoteConfig(ctx.extensionUri, url);
+  }
+  if (!dlConfig) {
+    return;
+  }
+  const config = dlConfig;
   if (
     Object.keys(await getIndexFile(ctx.extensionUri)).includes(repoUrl) &&
     !(await approveRedundantImport())
@@ -59,13 +77,19 @@ async function importRemote(ctx: vscode.ExtensionContext) {
   );
 }
 
-async function approveRedundantImport() {
+async function getApproval(msg: string) {
   const response = await vscode.window.showWarningMessage(
-    "You're trying to reimport a pre-existing gallery, do you want to proceed?",
+    msg,
     "Continue",
     "Cancel"
   );
   return response === "Continue";
+}
+
+async function approveRedundantImport() {
+  return getApproval(
+    "You're trying to reimport a pre-existing gallery, do you want to proceed?"
+  );
 }
 
 async function importLocal(ctx: vscode.ExtensionContext) {
@@ -188,10 +212,6 @@ async function removeGallery(
   removeIndex(ctx.extensionUri, identifier);
 }
 
-async function showOutput(ctx: vscode.ExtensionContext) {
-  LOGGER.show(true);
-}
-
 async function update(ctx: vscode.ExtensionContext, config: GalleryConfig) {
   vscode.window
     .showInformationMessage(
@@ -258,6 +278,7 @@ export function activate(ctx: vscode.ExtensionContext) {
   const treeViewProvider = new InstalledGalleriesExplorerProvider(
     ctx.extensionUri
   );
+  var rootPerm = false;
   vscode.window.registerTreeDataProvider(
     "installed-galleries",
     treeViewProvider
@@ -266,7 +287,7 @@ export function activate(ctx: vscode.ExtensionContext) {
   gallery.onActivate();
   ctx.subscriptions.push(
     vscode.commands.registerCommand("plywood-gallery.ImportRemote", () => {
-      importRemote(ctx);
+      importRemote(ctx, rootPerm);
     }),
     vscode.commands.registerCommand("plywood-gallery.ImportLocal", () => {
       importLocal(ctx);
@@ -296,7 +317,16 @@ export function activate(ctx: vscode.ExtensionContext) {
       }
     ),
     vscode.commands.registerCommand("plywood-gallery.ShowOutput", () => {
-      showOutput(ctx);
+      LOGGER.show(true);
+    }),
+    vscode.commands.registerCommand("plywood-gallery.Root", async () => {
+      if (
+        await getApproval(
+          "Are you sure about this? Enabling root permissions will not caution when downloading potentially malicious galleries."
+        )
+      ) {
+        rootPerm = true;
+      }
     })
   );
   vscode.commands.executeCommand("plywood-gallery.CheckGalleryUpdate");

@@ -1,6 +1,6 @@
 h1,
 h2 {
-  color: var(--vscode-button-foreground);
+  color: var(--vscode-foreground);
 }
 
 .image-button {
@@ -46,8 +46,7 @@ h2 {
 }
 
 .selected-header-label {
-  color: var(--vscode-button-foreground);
-  border-bottom-color: var(--vscode-button-foreground);
+  color: var(--vscode-panelTitle-activeForeground);
 }
 
 .header-button {
@@ -67,7 +66,7 @@ h2 {
 .header-button.disabled {
   color: var(--vscode-disabledForeground);
   background-color: var(--vscode-banner-background);
-  cursor: auto;
+  cursor: default;
 }
 
 .header-button.disabled:hover {

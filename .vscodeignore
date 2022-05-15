@@ -11,5 +11,4 @@ webpack.config.js
 **/.eslintrc.json
 **/*.map
 **/*.ts
-local/**
 cache/**

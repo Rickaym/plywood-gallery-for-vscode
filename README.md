@@ -35,7 +35,9 @@ Users appreciate release notes as you update your extension.
 
 Initial release of Plywood Gallery
 
+## Credits
 
-<a href="https://www.flaticon.com/free-icons/gallery" title="gallery icons">Gallery icons created by Ilham Fitrotul Hayat - Flaticon</a>
-<a href="https://www.flaticon.com/free-icons/gallery" title="gallery icons">Gallery icons created by Kiranshastry - Flaticon</a>
-<a href="https://www.flaticon.com/free-icons/photo" title="photo icons">Photo icons created by Andrean Prabowo - Flaticon</a>
+- [kolibril13](https://github.com/kolibril13) for building the relevant [libraries](https://github.com/kolibril13/plywood-gallery) and [templates]().
+- <a href="https://www.flaticon.com/free-icons/picture" title="picture icons">Picture icons created by Pixel perfect - Flaticon</a>
+- <a href="https://www.flaticon.com/free-icons/photo" title="photo icons">Photo icons created by Andrean Prabowo - Flaticon</a>
+- <a href="https://www.flaticon.com/free-icons/wood" title="wood icons">Wood icons created by Freepik - Flaticon</a>

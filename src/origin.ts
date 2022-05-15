@@ -6,10 +6,11 @@
 
 import * as vscode from "vscode";
 import * as yaml from "yaml";
-import { createWriteStream, mkdirSync, WriteStream } from "fs";
+import { createWriteStream } from "fs";
 import {
   Log,
   PROJECT_CONFIG_FILENAME,
+  PROJECT_BATCHCONFIG_FILENAME,
   hasValidFileExtension,
   isValidPath,
   reformatObject,
@@ -37,6 +38,12 @@ export interface GalleryConfig {
   galleryParametersPath: string;
 }
 
+export interface BatchGalleryConfig {
+  projectName: string;
+  galleryConfigs: string[];
+  favicon: string | undefined;
+}
+
 interface ImageParameter {
   image_path: string;
   celltype: string;
@@ -46,6 +53,42 @@ interface ImageParameter {
 
 export type GalleryParams = { [category: string]: ImageParameter[] };
 
+export class Project {
+  constructor(
+    private readonly extensionUri: vscode.Uri,
+    public readonly config: GalleryConfig,
+    public readonly parameters: GalleryParams,
+    public readonly previewImage: vscode.Uri,
+    public readonly index: IndexMenu
+  ) {}
+
+  get iconPath() {
+    return this.index.isExternal
+      ? localDirectoryOf(
+          this.extensionUri,
+          this.config.projectName,
+          this.config.favicon.split("/").pop()
+        )
+      : vscode.Uri.joinPath(
+          vscode.Uri.file(this.index.galleryConfigFp),
+          `../${this.config.favicon}`
+        );
+  }
+
+  imagePath(imagePath: string) {
+    return this.index.isExternal
+      ? localDirectoryOf(
+          this.extensionUri,
+          this.config.projectName,
+          imagePath.split("/").pop()
+        )
+      : vscode.Uri.joinPath(
+          vscode.Uri.file(this.index.galleryConfigFp),
+          `../${imagePath}`
+        );
+  }
+}
+
 /**
  * Returns true if the runtime check on the provided object having
  * all the keys specified.
@@ -53,14 +96,7 @@ export type GalleryParams = { [category: string]: ImageParameter[] };
  * @param conf
  * @returns
  */
-export function isValidConfig(conf: any) {
-  const mustKeys = [
-    "projectName",
-    "repositoryUrl",
-    "userContentVersion",
-    "description",
-    "galleryParametersPath",
-  ];
+export function isValidConfig(conf: any, mustKeys: string[]) {
   const confgKeys = Object.keys(conf);
   if (!mustKeys.every((key) => confgKeys.includes(key))) {
     return false;
@@ -92,19 +128,72 @@ export async function fetchLocalConfig(
   return yamlObj;
 }
 
+export async function remoteHasBatchConfig(remoteRootDir: string) {
+  try {
+    const res = await Axios.get(
+      `${remoteRootDir}/${PROJECT_BATCHCONFIG_FILENAME}`
+    );
+    return res.status === 200;
+  } catch (e) {
+    return false;
+  }
+}
+
+export async function fetchRemoteConfigFromBatch(
+  extensionUri: vscode.Uri,
+  remoteRootDir: string
+) {
+  const contentUrl = `${remoteRootDir}/${PROJECT_BATCHCONFIG_FILENAME}`;
+  Log.info(
+    `Fetching entry batch configuration from content url "${contentUrl}"`
+  );
+  const res = await getContent(contentUrl, "batch gallery configuration");
+  if (!res) {
+    return;
+  }
+  Log.info(
+    `Content successfully fetched with status ${res.status}: ${res.statusText}`
+  );
+  const yamlObj = reformatObject<BatchGalleryConfig>(yaml.parse(res.data));
+  if (!isValidConfig(yamlObj, ["galleryConfigs"])) {
+    vscode.window.showErrorMessage(
+      Log.error(
+        "The batch gallery configuration for this repository has an invalid structure."
+      )
+    );
+    return;
+  }
+  const choices: { [category: string]: GalleryConfig } = {};
+  for (let addon in yamlObj.galleryConfigs) {
+    const conf = await fetchRemoteConfig(extensionUri, remoteRootDir, addon);
+    if (!conf) {
+      return;
+    }
+    choices[conf.projectName] = conf;
+  }
+  const chosenPrj = await vscode.window.showQuickPick(Object.keys(choices), {
+    title: "Select a gallery to download from the batch repository.",
+  });
+  if (chosenPrj) {
+    return choices[chosenPrj];
+  }
+}
+
 /**
  * Downloads the html_configuration.yaml file from the remote repository
  * and writes onto the local subdirectory.
  *
  * @param extensionUri
  * @param remoteRootDir
+ * @param contentAddon The added part to the remote root dir to fetch config
  * @returns GalleryParams
  */
 export async function fetchRemoteConfig(
   extensionUri: vscode.Uri,
-  remoteRootDir: string
+  remoteRootDir: string,
+  contentAddon: string = PROJECT_CONFIG_FILENAME
 ) {
-  const contentUrl = `${remoteRootDir}/${PROJECT_CONFIG_FILENAME}`;
+  const contentUrl = `${remoteRootDir}/${contentAddon}`;
   Log.info(`Fetching entry configuration from content url "${contentUrl}"`);
   return getContent(contentUrl, "gallery configuration").then((res) => {
     if (!res) {
@@ -114,7 +203,15 @@ export async function fetchRemoteConfig(
       `Content successfully fetched with status ${res.status}: ${res.statusText}`
     );
     const yamlObj = reformatObject<GalleryConfig>(yaml.parse(res.data));
-    if (!isValidConfig(yamlObj)) {
+    if (
+      !isValidConfig(yamlObj, [
+        "projectName",
+        "repositoryUrl",
+        "userContentVersion",
+        "description",
+        "galleryParametersPath",
+      ])
+    ) {
       vscode.window.showErrorMessage(
         Log.error(
           "The gallery configuration for this repository has an invalid structure."
@@ -345,17 +442,15 @@ export async function fetchRemoteAssets(
     imgsDownloaded += 1;
     progress.report({
       increment: perAssetDownload / 2,
-      message: Log.info(`[${imgsDownloaded}/${nImgs}] Downloading image "${imgName}".`)
+      message: Log.info(
+        `[${imgsDownloaded}/${nImgs}] Downloading image "${imgName}".`
+      ),
     });
-    if (ok) {
-      Log.info(
-        `[${imgsDownloaded}/${nImgs}] Succeeded downloading "${imgName}".`
-      );
-    } else {
-      Log.error(
-        `[${imgsDownloaded}/${nImgs}] Failed downloading "${imgName}".`
-      );
-    }
+    Log.info(
+      `[${imgsDownloaded}/${nImgs}] ${
+        ok ? "Succeeded" : "Failed"
+      } downloading "${imgName}".`
+    );
     if (imgsDownloaded === nImgs) {
       finished = true;
     }
@@ -384,12 +479,16 @@ export async function fetchRemoteAssets(
         return;
       }
       const imgDestUrl = `${remoteRootUrl}/${imgPath}`;
-      Log.info(`[${imgsDownloaded}/${nImgs}] Image "${imgName}" at url "${imgDestUrl}".`);
+      Log.info(
+        `[${imgsDownloaded}/${nImgs}] Image "${imgName}" at url "${imgDestUrl}".`
+      );
       // Progress half considered finished when starting and after moved
       // will incur the other half
       progress.report({
         increment: perAssetDownload / 2,
-        message: Log.info(`[${imgsDownloaded}/${nImgs}] Downloading image "${imgName}".`)
+        message: Log.info(
+          `[${imgsDownloaded}/${nImgs}] Downloading image "${imgName}".`
+        ),
       });
       await downloadGalleryImage(
         extensionUri,
@@ -456,42 +555,6 @@ export async function fetchRemoteAssets(
       }
     }, 3000);
   });
-}
-
-export class Project {
-  constructor(
-    private readonly extensionUri: vscode.Uri,
-    public readonly config: GalleryConfig,
-    public readonly parameters: GalleryParams,
-    public readonly previewImage: vscode.Uri,
-    public readonly index: IndexMenu
-  ) {}
-
-  get iconPath() {
-    return this.index.isExternal
-      ? localDirectoryOf(
-          this.extensionUri,
-          this.config.projectName,
-          this.config.favicon.split("/").pop()
-        )
-      : vscode.Uri.joinPath(
-          vscode.Uri.file(this.index.galleryConfigFp),
-          `../${this.config.favicon}`
-        );
-  }
-
-  imagePath(imagePath: string) {
-    return this.index.isExternal
-      ? localDirectoryOf(
-          this.extensionUri,
-          this.config.projectName,
-          imagePath.split("/").pop()
-        )
-      : vscode.Uri.joinPath(
-          vscode.Uri.file(this.index.galleryConfigFp),
-          `../${imagePath}`
-        );
-  }
 }
 
 /**

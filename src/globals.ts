@@ -36,6 +36,7 @@ export class Log {
 }
 
 export const PROJECT_CONFIG_FILENAME = "gallery_config.yaml";
+export const PROJECT_BATCHCONFIG_FILENAME = "batch_gallery_config.yaml";
 export const ALLOWED_ASSET_FILE_EXTENSIONS = [".png", ".jpeg", ".jpg"];
 
 export function hasValidFileExtension(filename: string) {
@@ -193,8 +194,8 @@ export function prepareRepoUrl(urlInput: string) {
   let branch = "main";
   let url = urlInput.trim();
 
-  if (urlInput.includes(":") && urlInput.split(":").length - 1 === 2) {
-    const segs = urlInput.split(":");
+  if (urlInput.includes(";")) {
+    const segs = urlInput.split(";");
     if (segs[1]) {
       branch = segs[0];
       url = segs[1];

@@ -1,11 +1,11 @@
 {
   "name": "plywood-gallery",
   "displayName": "Plywood Gallery For VSCode",
-  "description": "A utility Extension to visualize code snippets for Python Graphical Frameworks.",
+  "description": "A utility Extension to visualize code snippets for Graphical Frameworks.",
   "version": "0.0.1",
   "publisher": "Rickaym",
   "repository": {
-    "url": "https://github.com/Rickaym/Plywood-Gallery",
+    "url": "https://github.com/Rickaym/Plywood-Gallery-For-VSCode",
     "type": "git",
     "directory": "src"
   },
@@ -16,6 +16,7 @@
   "engines": {
     "vscode": "^1.66.0"
   },
+  "icon": "./assets/wooden-box.png",
   "categories": [
     "Visualization",
     "Other"
@@ -34,6 +35,7 @@
     "onCommand:plywood-gallery.RemoveGallery",
     "onCommand:plywood-gallery.CheckGalleryUpdate",
     "onCommand:plywood-gallery.ShowOutput",
+    "onCommand:plywood-gallery.Root",
     "onView:installed-galleries",
     "onView:recommended-galleries"
   ],
@@ -62,8 +64,7 @@
       "gallery-explorer": [
         {
           "id": "installed-galleries",
-          "name": "Galleries",
-          "icon": "./assets/gallery.png"
+          "name": "Galleries"
         },
         {
           "id": "recommended-galleries",
@@ -136,7 +137,6 @@
       {
         "command": "plywood-gallery.RemoveGallery",
         "title": "Plywood Gallery: Remove a downloaded gallery.",
-        "shortTitle": "Delete",
         "icon": "$(trash)"
       },
       {
@@ -148,6 +148,10 @@
         "command": "plywood-gallery.ShowOutput",
         "title": "Plywood Gallery: Show output channel",
         "icon": "$(output)"
+      },
+      {
+        "command": "plywood-gallery.Root",
+        "title": "Plywood Gallery: Enable Root permissions"
       }
     ]
   },
