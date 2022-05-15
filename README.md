@@ -14,8 +14,8 @@ A gallery is defined using the template, the extension is able to
 import its contents into a VSCode webview for easy and visualized
 access.
 
-Once the extension is fully installed, you will be introduced to this treeview on the activity bar.<br>
-<img src="https://raw.githubusercontent.com/Rickaym/Plywood-Gallery-For-VSCode/master/media/treeview.png" width="200">.<br>Here you can operate all useful functionality
+Once the extension is fully installed, you will be introduced to this treeview on the activity bar.<br><br>
+<img src="https://raw.githubusercontent.com/Rickaym/Plywood-Gallery-For-VSCode/master/media/treeview.png" width="200"><br><br>Here you can operate all useful functionality
 in managing different galleries.
 
 Functionality within the treeview:
@@ -35,7 +35,7 @@ You can load galleries from two distinct locations:
 
 In order to load a remote github repository for gallery, you can use the
 command `plywood-gallery.ImportRemote` or via the treeview navigation icons
-<img src="https://raw.githubusercontent.com/Rickaym/Plywood-Gallery-For-VSCode/master/media/nav.png" width="130"> (you can hover over them to see function).
+<img src="https://raw.githubusercontent.com/Rickaym/Plywood-Gallery-For-VSCode/master/media/nav.png" width="95"> (you can hover over them to see function).
 
 
 ## Known Issues
