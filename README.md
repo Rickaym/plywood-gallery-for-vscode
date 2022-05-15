@@ -1,5 +1,9 @@
 # Plywood Gallery For VSCode
 
+<a href="https://marketplace.visualstudio.com/items?itemName=Rickaym.plywood-gallery"><img alt="Extension Homepage" src="https://img.shields.io/badge/vscode-install%20Here-brightgreen?logo=visualstudiocode&style=for-the-badge"></a>
+<a href="https://marketplace.visualstudio.com/items?itemName=Rickaym.plywood-gallery"><img alt="Extension Version" src="https://img.shields.io/visual-studio-marketplace/v/Rickaym.plywood-gallery?style=for-the-badge&logo=verizon&logoColor=white"></a>
+<a href="https://discord.gg/UmnzdPgn6g"><img src="https://img.shields.io/badge/GET SUPPORT-DISCORD-orange?style=for-the-badge&logo=discord&logoColor=white&color=5865F2"></a>
+
 A utility Extension to visualize code snippets for Graphical Frameworks.
 
 ## Key Features
