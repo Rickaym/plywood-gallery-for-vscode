@@ -15,7 +15,7 @@ import its contents into a VSCode webview for easy and visualized
 access.
 
 Once the extension is fully installed, you will be introduced to this treeview on the activity bar.<br>
-![treeview](https://github.com/Rickaym/Plywood-Gallery-For-VSCode/tree/master/media/treeview.png).<br>Here you can operate all useful functionality
+<img src="https://raw.githubusercontent.com/Rickaym/Plywood-Gallery-For-VSCode/master/media/treeview.png" width="200">.<br>Here you can operate all useful functionality
 in managing different galleries.
 
 Functionality within the treeview:
@@ -35,7 +35,7 @@ You can load galleries from two distinct locations:
 
 In order to load a remote github repository for gallery, you can use the
 command `plywood-gallery.ImportRemote` or via the treeview navigation icons
-![sample](https://github.com/Rickaym/Plywood-Gallery-For-VSCode/tree/master/media/nav.png) (you can hover over them to see function).
+<img src="https://raw.githubusercontent.com/Rickaym/Plywood-Gallery-For-VSCode/master/media/nav.png" width="130"> (you can hover over them to see function).
 
 
 ## Known Issues
