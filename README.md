@@ -43,8 +43,8 @@ In order to load a remote github gallery, you can use the
 command `plywood-gallery.ImportRemote` or via the button for `cloud-download` in
 the treeview navigation bar.
 
-This will prompt a input box for a repository URL whereby you will have to provide the URL of the repository that you want to import. Keep note though that the extension
-by default looks for a gallery
+This will prompt an input box where you'll have to provide the URL of the repository to be imported.
+Keep note though that the extension by default looks for a gallery
 under the `main` branch of any specified repositories, in cases where this may not be intended, you can specify
 an optional branch parameter before the URL with a semi-colon.
 
