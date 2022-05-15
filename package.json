@@ -16,7 +16,7 @@
   "engines": {
     "vscode": "^1.66.0"
   },
-  "icon": "./assets/wooden-box.png",
+  "icon": "assets/wooden-box.png",
   "categories": [
     "Visualization",
     "Other"
