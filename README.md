@@ -1,6 +1,6 @@
 # Plywood Gallery For VSCode
 
-A utility extension to visualize code snippets for libraries and frameworks.
+A utility Extension to visualize code snippets for Graphical Frameworks.
 
 ## Key Features
 
@@ -8,35 +8,61 @@ A utility extension to visualize code snippets for libraries and frameworks.
 - Text/dropdown support for Code Snippets
 - Gain access to many community and official code snippet repositories
 
-A gallery simply put is a list of aggregations of **code** and **image** using
+A gallery simply put is a list of mappings of **code** and **image** using
 the template specifed by the core gallery [Plywood Gallery](https://github.com/kolibril13/plywood-gallery/).
-A gallery is defined using the template, the extension is able to
-import its contents into a VSCode webview for easy and visualized
-access.
+Community members can make a gallery of their own by following the said template and
+publish them to Github where users can download and import them. Once a gallery is
+imported via [these steps](#importing-galleries), a webview will be installed for the
+imported gallery whereby using it is as easy as pressing on the images of the objects that
+you want the code equivalent for.
+<br><br><img src="https://raw.githubusercontent.com/Rickaym/Plywood-Gallery-For-VSCode/master/media/usage.gif" width="200"><br><br>
 
-Once the extension is fully installed, you will be introduced to this treeview on the activity bar.<br><br>
-<img src="https://raw.githubusercontent.com/Rickaym/Plywood-Gallery-For-VSCode/master/media/treeview.png" width="200"><br><br>Here you can operate all useful functionality
-in managing different galleries.
 
-Functionality within the treeview:
+## Introduction
 
+After the extension is fully installed, you will be introduced to this treeview on the activity bar.
+<br><br><img src="https://raw.githubusercontent.com/Rickaym/Plywood-Gallery-For-VSCode/master/media/treeview.png" width="200"><br><br>
+Here you can manage all functionality for the extension and control and modify
+imported galleries.
+
+#### Certain things you can do inside the treeview
 - Import Local and Remote galleries
 - Remove Local and Remote galleries
 - Check for Remote gallery updates
 - Opening a gallery (by clicking on the gallery item)
 - Detailing code items of a gallery
 
-
-### Importing Galleries
+## Importing Galleries
 
 You can load galleries from two distinct locations:
-- Remote GitHub Repositories
-- Local Repositories/Directories
+- [Remote GitHub Repositories](#remote-galleries)
+- [Local Repositories/Directories](#local-galleries)
 
-In order to load a remote github repository for gallery, you can use the
-command `plywood-gallery.ImportRemote` or via the treeview navigation icons
-<img src="https://raw.githubusercontent.com/Rickaym/Plywood-Gallery-For-VSCode/master/media/nav.png" width="95"> (you can hover over them to see function).
+### Remote Galleries
+In order to load a remote github gallery, you can use the
+command `plywood-gallery.ImportRemote` or via the button for `cloud-download` in
+the treeview navigation bar.
 
+This will prompt a input box for a repository URL whereby you will have to provide the URL of the repository that you want to import. Keep note though that the extension
+by default looks for a gallery
+under the `main` branch of any specified repositories, in cases where this may not be intended, you can specify
+an optional branch parameter before the URL with a semi-colon.
+
+E.g.
+```apache
+master;https://github.com/kolibril13/plywood-gallery-minimal-example
+```
+
+### Local Galleries
+In order to load a local gallery, you can use the
+command `plywood-gallery.ImportLocal` or via the button for `desktop-download`
+in the treeview navigation bar. This will bring up a file explorer that accepts any
+`.yaml` files. You will successively have to find the `gallery_config.yaml` file
+for the local gallery that you intend to import (it doesn't have to be named gallery_config) and simply press open.
+
+Importing a gallery inside a batch simply changes the protocol from picking a central
+`gallery_config.yaml` file to picking the specific config file for the
+gallery.
 
 ## Known Issues
 
