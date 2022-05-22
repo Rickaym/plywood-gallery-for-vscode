@@ -78,7 +78,7 @@ Initial release of the Plywood Gallery Extension
 
 ## Credits
 
-- [kolibril13](https://github.com/kolibril13) for building the [plywood gallery core library](https://github.com/kolibril13/plywood-gallery) and [the minimal example](https://github.com/kolibril13/plywood-gallery-minimal-example).```
+- [kolibril13](https://github.com/kolibril13) for building the [plywood gallery core library](https://github.com/kolibril13/plywood-gallery) and [the minimal example](https://github.com/kolibril13/plywood-gallery-minimal-example).
 - <a href="https://www.flaticon.com/free-icons/picture" title="picture icons">Picture icons created by Pixel perfect - Flaticon</a>
 - <a href="https://www.flaticon.com/free-icons/photo" title="photo icons">Photo icons created by Andrean Prabowo - Flaticon</a>
 - <a href="https://www.flaticon.com/free-icons/wood" title="wood icons">Wood icons created by Freepik - Flaticon</a>
