@@ -4,7 +4,7 @@
 <a href="https://marketplace.visualstudio.com/items?itemName=Rickaym.plywood-gallery"><img alt="Extension Version" src="https://img.shields.io/visual-studio-marketplace/v/Rickaym.plywood-gallery?style=for-the-badge&logo=verizon&logoColor=white"></a>
 <a href="https://discord.gg/UmnzdPgn6g"><img src="https://img.shields.io/badge/GET SUPPORT-DISCORD-orange?style=for-the-badge&logo=discord&logoColor=white&color=5865F2"></a>
 
-A utility extension to insert code snippets from the project [*plywood-gallery*](https://github.com/kolibril13/plywood-gallery/)  into VS Code.
+This extension inserts code snippets into VS Code, where the snippets are represented by images.
 
 ## Key Features
 
