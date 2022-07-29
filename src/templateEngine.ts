@@ -1,10 +1,15 @@
 import * as vscode from "vscode";
 import { getNonce, WebviewResources } from "./globals";
 
+interface PermittedCSS {
+  width?: string;
+  height?: string;
+}
+
 export class TemplateEngine {
   constructor(
     public readonly webview: vscode.Webview,
-    public readonly resource: WebviewResources,
+    public readonly resource: WebviewResources
   ) {}
 
   private resMap = {
@@ -23,6 +28,14 @@ export class TemplateEngine {
       (await vscode.workspace.fs.readFile(fp)).toString(),
       globals
     );
+  }
+
+  static public createCSSRegex(property: string, pattern: string) {
+    return new RegExp(`${property}\s*:\s*(${pattern})\s*;`);
+  }
+
+  static parseCSS(cssDoc: string): PermittedCSS {
+
   }
 
   static trueRender(htmlDoc: string, globals: { [varname: string]: any }) {

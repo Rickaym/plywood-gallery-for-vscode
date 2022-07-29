@@ -46,24 +46,6 @@ export function hasValidFileExtension(filename: string) {
 }
 
 /**
- * Reformat all object keys to be in camelCase, values and
- * all other remains untouched.
- */
-export function reformatObject<T>(conf: any): T {
-  Object.keys(conf).forEach((key) => {
-    let segs = key.split("_");
-    segs = segs.map((name) => {
-      if (name !== segs[0]) {
-        name = name.replace(/./, (c) => c.toUpperCase());
-      }
-      return name;
-    });
-    conf[segs.join("")] = conf[key];
-  });
-  return conf;
-}
-
-/**
  * Provide a nonce for inline scripts inside webviews, this is necessary
  * for script execution.
  * @returns nonce

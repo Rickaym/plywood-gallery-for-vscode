@@ -4,10 +4,16 @@
  */
 
 import * as vscode from "vscode";
+import { checkGalleryUpdate } from "./extension";
 import { getWebviewResFp, getWebviewResource, Log } from "./globals";
 import { Project } from "./origin";
 
 import { TemplateEngine } from "./templateEngine";
+
+interface SafeCSS {
+  width?: string;
+  length?: string;
+}
 
 export class Gallery {
   constructor(
@@ -15,6 +21,8 @@ export class Gallery {
     private readonly extensionUri: vscode.Uri
   ) {}
 
+  // a list of text editor schemes that won't be considered an
+  // insertable document
   private static readonly disallowedSchemes = ["output"];
 
   onActivate() {
@@ -46,7 +54,7 @@ export class Gallery {
   createWebView(project: Project) {
     return vscode.window.createWebviewPanel(
       "plywood-gallery",
-      project.config.projectName,
+      project.config.project_name,
       {
         viewColumn: vscode.ViewColumn.Beside,
         preserveFocus: true,
@@ -62,6 +70,10 @@ export class Gallery {
         enableForms: false,
       }
     );
+  }
+
+  extractSafeCSS(css: string): SafeCSS {
+    return { width: "200px" };
   }
 
   /**
@@ -83,7 +95,7 @@ export class Gallery {
         var panel = this.createWebView(project);
         this.panel = panel;
       } else {
-        this.panel.title = project.config.projectName;
+        this.panel.title = project.config.project_name;
         var panel = this.panel;
       }
     } else {
@@ -97,10 +109,12 @@ export class Gallery {
         getWebviewResFp(this.extensionUri, "gallery", "html", "img_item")
       )
     ).toString();
+    let styles: SafeCSS[] = [];
     let galleryObjs = Object.keys(project.parameters)
       .map((title) => {
         return `<h2>${title}</h2>\n${project.parameters[title]
           .map((imgMap) => {
+            styles.push(this.extractSafeCSS(imgMap.css));
             const code = imgMap.code.replace(/"/g, "'");
             const imgPath = project.imagePath(imgMap.image_path);
             return TemplateEngine.trueRender(galleryItemDoc, {
@@ -116,16 +130,22 @@ export class Gallery {
     panel.webview.html = await engine.render({
       galleryObjects: galleryObjs,
       galleryDesc: project.config.description,
-      galleryTitle: project.config.projectName,
-      galleryFooter: project.config.customFooter,
-      userContentVersion: project.config.userContentVersion,
+      galleryTitle: project.config.project_name,
+      galleryFooter: project.config.custom_footer,
+      userContentVersion: project.config.user_content_version,
       destination: project.index.isExternal ? "Remote" : "Local",
     });
-
+    panel.webview.postMessage({ command: "styles", data: styles });
     panel.webview.onDidReceiveMessage(
       (message) => {
         if (message.command === "update") {
-          return;
+          checkGalleryUpdate(this.extensionUri, project).then((status) => {
+            if (!status) {
+              vscode.window.showInformationMessage(
+                `${project.config.project_name} does not have any new updates!`
+              );
+            }
+          });
         } else {
           this.insertCode(message.code);
         }

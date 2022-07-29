@@ -9,6 +9,8 @@ import {
   getLocalGallery,
   remoteHasBatchConfig,
   fetchRemoteConfigFromBatch,
+  Project,
+  getAllLocalGalleries,
 } from "./origin";
 import { addIndex, removeIndex, getIndexFile, getIndex } from "./indexing";
 import {
@@ -19,7 +21,6 @@ import {
   makeShellDirectories,
   prepareRepoUrl,
   letOpenGallery,
-  PROJECT_BATCHCONFIG_FILENAME,
 } from "./globals";
 import { Gallery } from "./gallery";
 import {
@@ -30,7 +31,8 @@ import {
 
 async function importRemote(
   ctx: vscode.ExtensionContext,
-  rootPerm: boolean = false
+  rootPerm: boolean = false,
+  forceReimport: boolean = false
 ) {
   let urlInput = await vscode.window.showInputBox({
     title: "Raw GitHub Url (you can prefix an optional branch)",
@@ -43,7 +45,10 @@ async function importRemote(
     var repoUrl = urlInput;
   }
   let url = prepareRepoUrl(urlInput);
-  if (!rootPerm && !url.startsWith("https://raw.githubusercontent.com/kolibril13")) {
+  if (
+    !rootPerm &&
+    !url.startsWith("https://raw.githubusercontent.com/kolibril13")
+  ) {
     vscode.window.showErrorMessage(
       Log.info("You cannot download this gallery for security reasons.")
     );
@@ -62,6 +67,7 @@ async function importRemote(
   const config = dlConfig;
   if (
     Object.keys(await getIndexFile(ctx.extensionUri)).includes(repoUrl) &&
+    !forceReimport &&
     !(await approveRedundantImport())
   ) {
     return;
@@ -104,7 +110,7 @@ async function importLocal(ctx: vscode.ExtensionContext) {
       } else {
         var fileUri = val[0];
       }
-      fetchLocalConfig(ctx.extensionUri, fileUri).then(async (conf) => {
+      fetchLocalConfig(fileUri).then(async (conf) => {
         if (!conf) {
           return;
         }
@@ -120,15 +126,15 @@ async function importLocal(ctx: vscode.ExtensionContext) {
           fileUri.fsPath,
           {
             galleryConfigFp: fileUri.fsPath,
-            projectName: conf.projectName,
+            projectName: conf.project_name,
             uri: fileUri.fsPath,
-            version: conf.userContentVersion,
+            version: conf.user_content_version,
             isExternal: false,
           },
           idxFile
         ).then(() => {
           letOpenGallery(
-            `Successfully imported local gallery "${conf.projectName}".`,
+            `Successfully imported local gallery "${conf.project_name}".`,
             fileUri.fsPath
           );
         });
@@ -212,10 +218,10 @@ async function removeGallery(
   removeIndex(ctx.extensionUri, identifier);
 }
 
-async function update(ctx: vscode.ExtensionContext, config: GalleryConfig) {
+async function update(extensionUri: vscode.Uri, config: GalleryConfig) {
   vscode.window
     .showInformationMessage(
-      `Gallery "${config.projectName}" has a new update!`,
+      `Gallery "${config.project_name}" has a new update!`,
       "Update Now",
       "Remind Me Later"
     )
@@ -226,14 +232,14 @@ async function update(ctx: vscode.ExtensionContext, config: GalleryConfig) {
         vscode.window.withProgress(
           {
             location: vscode.ProgressLocation.Notification,
-            title: `Updating gallery ${config.projectName}`,
+            title: `Updating gallery ${config.project_name}`,
             cancellable: true,
           },
           (progress, token) =>
             fetchRemoteAssets(
-              ctx.extensionUri,
+              extensionUri,
               "",
-              prepareRepoUrl(config.repositoryUrl),
+              prepareRepoUrl(config.repository_url),
               config,
               progress,
               token
@@ -243,20 +249,21 @@ async function update(ctx: vscode.ExtensionContext, config: GalleryConfig) {
     });
 }
 
-async function checkGalleryUpdate(
-  ctx: vscode.ExtensionContext,
-  gallery?: GalleryTreeItem
-) {
-  if (!gallery || !gallery.project) {
-    return;
-  }
-  const rootUrl = prepareRepoUrl(gallery.project.config.repositoryUrl);
-  const config = await fetchRemoteConfig(ctx.extensionUri, rootUrl);
-  if (!config) {
-    return;
-  }
-  if (config.userContentVersion !== gallery.project.config.userContentVersion) {
-    update(ctx, config);
+export async function checkGalleryUpdate(
+  extensionUri: vscode.Uri,
+  project: Project
+): Promise<boolean> {
+  const rootUrl = prepareRepoUrl(project.config.repository_url);
+  const config = await fetchRemoteConfig(extensionUri, rootUrl);
+
+  if (
+    config &&
+    config.user_content_version !== project.config.user_content_version
+  ) {
+    update(extensionUri, config);
+    return true;
+  } else {
+    return false;
   }
 }
 
@@ -286,9 +293,12 @@ export function activate(ctx: vscode.ExtensionContext) {
   const gallery = new Gallery(ctx.subscriptions, ctx.extensionUri);
   gallery.onActivate();
   ctx.subscriptions.push(
-    vscode.commands.registerCommand("plywood-gallery.ImportRemote", () => {
-      importRemote(ctx, rootPerm);
-    }),
+    vscode.commands.registerCommand(
+      "plywood-gallery.ImportRemote",
+      (...args) => {
+        importRemote(ctx, rootPerm, ...args);
+      }
+    ),
     vscode.commands.registerCommand("plywood-gallery.ImportLocal", () => {
       importLocal(ctx);
     }),
@@ -306,8 +316,25 @@ export function activate(ctx: vscode.ExtensionContext) {
     }),
     vscode.commands.registerCommand(
       "plywood-gallery.CheckGalleryUpdate",
-      () => {
-        checkGalleryUpdate(ctx);
+      (gallery?: GalleryTreeItem) => {
+        if (!gallery || !gallery.project) {
+          // If a gallery object is not specified, the command is intended
+          // to check all updates for all remote repos.
+          getAllLocalGalleries(ctx.extensionUri, false).then((projects) => {
+            projects.forEach((proj) =>
+              checkGalleryUpdate(ctx.extensionUri, proj)
+            );
+          });
+        } else {
+          checkGalleryUpdate(ctx.extensionUri, gallery.project).then(
+            (status) => {
+              if (!status) {
+                vscode.window.showInformationMessage(
+                  `${gallery.name} does not have any new updates!`
+                );
+              }}
+          );
+        }
       }
     ),
     vscode.commands.registerCommand(

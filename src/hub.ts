@@ -26,7 +26,7 @@ function tabularize(
 ) {
   return TemplateEngine.trueRender(htmlDoc, {
     galleryPreviewImagePath: webview.asWebviewUri(project.previewImage),
-    galleryTitle: project.config.projectName,
+    galleryTitle: project.config.project_name,
     galleryDesc: project.config.description.replace(new RegExp("\n", "g"), " "),
   });
 }
@@ -72,7 +72,7 @@ export class GalleryTreeItem extends vscode.TreeItem {
   ) {
     super(name, collapsibleState);
     if (this.isGallery() && this.project) {
-      this.description = `v${this.project.config.userContentVersion}`;
+      this.description = `v${this.project.config.user_content_version}`;
       this.tooltip = this.project.index.uri;
       this.command = {
         title: "Plywood Gallery: Open a gallery webview.",
@@ -120,7 +120,7 @@ export class GalleryTreeItem extends vscode.TreeItem {
             new GalleryTreeItem(
               this.extensionUri,
               vscode.TreeItemCollapsibleState.Collapsed,
-              prj.config.projectName,
+              prj.config.project_name,
               prj.index.isExternal ? externalGalleryType : internalGalleryType,
               prj
             )

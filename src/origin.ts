@@ -13,7 +13,6 @@ import {
   PROJECT_BATCHCONFIG_FILENAME,
   hasValidFileExtension,
   isValidPath,
-  reformatObject,
   canonical,
   letOpenGallery,
   asUint8Array,
@@ -29,13 +28,13 @@ import {
 } from "./indexing";
 
 export interface GalleryConfig {
-  projectName: string;
-  repositoryUrl: string;
-  userContentVersion: string;
+  project_name: string;
+  repository_url: string;
+  user_content_version: string;
   description: string;
   favicon: string;
-  customFooter: string;
-  galleryParametersPath: string;
+  custom_footer: string;
+  gallery_parameters_path: string;
 }
 
 export interface BatchGalleryConfig {
@@ -66,7 +65,7 @@ export class Project {
     return this.index.isExternal
       ? localDirectoryOf(
           this.extensionUri,
-          this.config.projectName,
+          this.config.project_name,
           this.config.favicon.split("/").pop()
         )
       : vscode.Uri.joinPath(
@@ -79,7 +78,7 @@ export class Project {
     return this.index.isExternal
       ? localDirectoryOf(
           this.extensionUri,
-          this.config.projectName,
+          this.config.project_name,
           imagePath.split("/").pop()
         )
       : vscode.Uri.joinPath(
@@ -112,7 +111,6 @@ export function isValidConfig(conf: any, mustKeys: string[]) {
  * @param fileUri
  */
 export async function fetchLocalConfig(
-  extensionUri: vscode.Uri,
   fileUri: vscode.Uri
 ) {
   if (!isValidPath(fileUri.fsPath, true)) {
@@ -122,9 +120,9 @@ export async function fetchLocalConfig(
     return;
   }
   const confFile = await vscode.workspace.fs.readFile(fileUri);
-  const yamlObj = reformatObject<GalleryConfig>(
+  const yamlObj = (
     yaml.parse(confFile.toString())
-  );
+  ) as GalleryConfig;
   return yamlObj;
 }
 
@@ -154,7 +152,7 @@ export async function fetchRemoteConfigFromBatch(
   Log.info(
     `Content successfully fetched with status ${res.status}: ${res.statusText}`
   );
-  const yamlObj = reformatObject<BatchGalleryConfig>(yaml.parse(res.data));
+  const yamlObj = yaml.parse(res.data) as BatchGalleryConfig;
   if (!isValidConfig(yamlObj, ["galleryConfigs"])) {
     vscode.window.showErrorMessage(
       Log.error(
@@ -169,7 +167,7 @@ export async function fetchRemoteConfigFromBatch(
     if (!conf) {
       return;
     }
-    choices[conf.projectName] = conf;
+    choices[conf.project_name] = conf;
   }
   const chosenPrj = await vscode.window.showQuickPick(Object.keys(choices), {
     title: "Select a gallery to download from the batch repository.",
@@ -202,14 +200,14 @@ export async function fetchRemoteConfig(
     Log.info(
       `Content successfully fetched with status ${res.status}: ${res.statusText}`
     );
-    const yamlObj = reformatObject<GalleryConfig>(yaml.parse(res.data));
+    const yamlObj = yaml.parse(res.data) as GalleryConfig;
     if (
       !isValidConfig(yamlObj, [
-        "projectName",
-        "repositoryUrl",
-        "userContentVersion",
+        "project_name",
+        "repository_url",
+        "user_content_version",
         "description",
-        "galleryParametersPath",
+        "gallery_parameters_path",
       ])
     ) {
       vscode.window.showErrorMessage(
@@ -221,7 +219,7 @@ export async function fetchRemoteConfig(
     }
     const cacheDir = cacheDirectoryOf(
       extensionUri,
-      yamlObj.projectName,
+      yamlObj.project_name,
       PROJECT_CONFIG_FILENAME
     );
     vscode.workspace.fs.writeFile(
@@ -248,17 +246,17 @@ export async function removeProjectFolder(projectFolderPath: vscode.Uri) {
  * Returns a Uri to the local repository of the gallery.
  *
  * @param extensionUri
- * @param galleryName
+ * @param projectName
  */
 export function localDirectoryOf(
   extensionUri: vscode.Uri,
-  galleryName: string,
+  projectName: string,
   filename: string = ""
 ) {
   return vscode.Uri.joinPath(
     extensionUri,
     "local",
-    canonical(galleryName),
+    canonical(projectName),
     filename
   );
 }
@@ -267,18 +265,18 @@ export function localDirectoryOf(
  * Returns a Uri to the cache repository of the gallery.
  *
  * @param extensionUri
- * @param galleryName
+ * @param projectName
  * @returns
  */
 export function cacheDirectoryOf(
   extensionUri: vscode.Uri,
-  galleryName: string,
+  projectName: string,
   filename: string = ""
 ) {
   return vscode.Uri.joinPath(
     extensionUri,
     "cache",
-    canonical(galleryName),
+    canonical(projectName),
     filename
   );
 }
@@ -288,10 +286,10 @@ export function cacheDirectoryOf(
  * local directory.
  *
  * @param extensionUri
- * @param galleryName
+ * @param projectName
  */
-async function moveCacheToLocal(extensionUri: vscode.Uri, galleryName: string) {
-  const cacheDir = cacheDirectoryOf(extensionUri, galleryName);
+async function moveCacheToLocal(extensionUri: vscode.Uri, projectName: string) {
+  const cacheDir = cacheDirectoryOf(extensionUri, projectName);
   if (!isValidPath(cacheDir.fsPath, false)) {
     const msg =
       "Operation failed, the cache folder has been emptied before saved.";
@@ -299,7 +297,7 @@ async function moveCacheToLocal(extensionUri: vscode.Uri, galleryName: string) {
     vscode.window.showErrorMessage(msg);
     throw Error(msg);
   }
-  const localDir = localDirectoryOf(extensionUri, galleryName);
+  const localDir = localDirectoryOf(extensionUri, projectName);
   if (isValidPath(localDir.fsPath, false)) {
     removeProjectFolder(localDir);
   }
@@ -368,7 +366,7 @@ export async function fetchRemoteAssets(
 ) {
   var cancelled = false;
   var finished = false;
-  var projectName = config.projectName;
+  var projectName = config.project_name;
   token.onCancellationRequested(() => {
     Log.info("User request cancelltion for remote asset fetching.");
     cancelled = true;
@@ -380,7 +378,7 @@ export async function fetchRemoteAssets(
     increment: 5,
     message: Log.info(`Downloading gallery parameters.`),
   });
-  const paramUrl = `${remoteRootUrl}/${config.galleryParametersPath}`;
+  const paramUrl = `${remoteRootUrl}/${config.gallery_parameters_path}`;
   Log.info(`Fetching gallery parameters from URL ${paramUrl}.`);
   const res = await getContent(paramUrl, "gallery parameters");
   if (!res) {
@@ -427,7 +425,7 @@ export async function fetchRemoteAssets(
     cacheDirectoryOf(
       extensionUri,
       projectName,
-      config.galleryParametersPath.split("/").pop()
+      config.gallery_parameters_path.split("/").pop()
     ),
     asUint8Array(JSON.stringify(params))
   );
@@ -525,7 +523,7 @@ export async function fetchRemoteAssets(
               galleryConfigFp: "local",
               projectName: projectName,
               uri: repoUrl,
-              version: config.userContentVersion,
+              version: config.user_content_version,
               isExternal: true,
             }).then(() => {
               letOpenGallery(
@@ -575,7 +573,7 @@ export async function getLocalGallery(
   const configDir = menu.isExternal
     ? localDirectoryOf(extensionUri, menu.projectName, PROJECT_CONFIG_FILENAME)
     : vscode.Uri.file(menu.galleryConfigFp);
-  const config = await fetchLocalConfig(extensionUri, configDir);
+  const config = await fetchLocalConfig(configDir);
   if (!config) {
     return;
   }
@@ -583,9 +581,9 @@ export async function getLocalGallery(
     ? localDirectoryOf(
         extensionUri,
         menu.projectName,
-        config.galleryParametersPath.split("/").pop()
+        config.gallery_parameters_path.split("/").pop()
       )
-    : vscode.Uri.joinPath(configDir, `../${config.galleryParametersPath}`);
+    : vscode.Uri.joinPath(configDir, `../${config.gallery_parameters_path}`);
 
   const params: GalleryParams = JSON.parse(
     (await vscode.workspace.fs.readFile(galleryParamsDir)).toString()
