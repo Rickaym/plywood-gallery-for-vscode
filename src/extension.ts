@@ -333,7 +333,8 @@ export function activate(ctx: vscode.ExtensionContext) {
                 vscode.window.showInformationMessage(
                   `${gallery.name} does not have any new updates!`
                 );
-              }}
+              }
+            }
           );
         }
       }
