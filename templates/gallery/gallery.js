@@ -9,27 +9,38 @@ if (verInf.textContent.includes("Local")) {
   updates.innerText = "Local Gallery";
 }
 
-window.addEventListener('message', event => {
+window.addEventListener("DOMContentLoaded", (event) => {
+  vscode.postMessage({
+    command: "getStyles",
+  });
+});
+
+window.addEventListener("message", (event) => {
   const message = event.data;
   switch (message.command) {
-      case 'styles':
-        let i = 0;
-        for (let img of galleryObjs.getElementsByClassName("image-button")) {
-          if (message.data[i].width) {
-            img.style.width = message.data[i].width;
-          }
-          if (message.data[i].height) {
-            img.style.width = message.data[i].height;
-          }
-          i += 1;
+    case "styles":
+      styles = message.data;
+      let i = 0;
+
+      for (let img of galleryObjs.getElementsByClassName("image-button")) {
+        if (styles[i].width) {
+          img.style.width = styles[i].width;
         }
+        if (styles[i].height) {
+          img.style.width = styles[i].height;
+        }
+        if (styles[i].border) {
+          img.style.border = styles[i].border;
+        }
+        i += 1;
+      }
   }
 });
 
 container.addEventListener("click", (event) => {
   if (event.target.className === "image-button") {
     vscode.postMessage({
-      command: "code-insert",
+      command: "codeInsert",
       code: event.target.alt,
     });
   }

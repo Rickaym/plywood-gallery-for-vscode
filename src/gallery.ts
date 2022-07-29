@@ -10,9 +10,11 @@ import { Project } from "./origin";
 
 import { TemplateEngine } from "./templateEngine";
 
+const safeCSSProperties = ["width", "height", "border"];
 interface SafeCSS {
   width?: string;
-  length?: string;
+  height?: string;
+  border?: string;
 }
 
 export class Gallery {
@@ -46,10 +48,10 @@ export class Gallery {
     );
   }
 
-  private panel: vscode.WebviewPanel | undefined;
+  private panel?: vscode.WebviewPanel;
+  private lastOpenedUri?: string;
+  private lastActiveEditor?: vscode.TextEditor;
   private resource = getWebviewResource(this.extensionUri, "gallery");
-
-  private lastActiveEditor: vscode.TextEditor | undefined;
 
   createWebView(project: Project) {
     return vscode.window.createWebviewPanel(
@@ -72,8 +74,33 @@ export class Gallery {
     );
   }
 
+  refresh() {
+    if (this.panel && this.lastOpenedUri) {
+      vscode.commands.executeCommand(
+        "plywood-gallery.OpenGallery",
+        this.lastOpenedUri
+      );
+    }
+  }
+
+  static extractCSSProperty(property: string, css: string) {
+    const result = RegExp(`${property}\s*:\s*([^;]*);?`, "g").exec(css);
+    if (result) {
+      return result[1].trim();
+    } else {
+      return undefined;
+    }
+  }
+
   extractSafeCSS(css: string): SafeCSS {
-    return { width: "200px" };
+    let style: { [k: string]: string } = {};
+    safeCSSProperties.forEach((property) => {
+      const value = Gallery.extractCSSProperty(property, css);
+      if (value) {
+        style[property] = value;
+      }
+    });
+    return style;
   }
 
   /**
@@ -135,7 +162,6 @@ export class Gallery {
       userContentVersion: project.config.user_content_version,
       destination: project.index.isExternal ? "Remote" : "Local",
     });
-    panel.webview.postMessage({ command: "styles", data: styles });
     panel.webview.onDidReceiveMessage(
       (message) => {
         if (message.command === "update") {
@@ -146,14 +172,15 @@ export class Gallery {
               );
             }
           });
-        } else {
+        } else if (message.command === "getStyles") {
+          panel.webview.postMessage({ command: "styles", data: styles });
+        } else if (message.command === "codeInsert") {
           this.insertCode(message.code);
         }
       },
       undefined,
       this.subscriptions
     );
-
     panel.onDidDispose(
       () => {
         Log.info(`Disposed webview for "${project.index.projectName}".`);
@@ -164,6 +191,7 @@ export class Gallery {
       undefined,
       this.subscriptions
     );
+    this.lastOpenedUri = project.index.uri;
     Log.info(`Shown webview for "${project.index.projectName}".`);
   }
 

@@ -40,7 +40,7 @@ export interface GalleryConfig {
 export interface BatchGalleryConfig {
   projectName: string;
   galleryConfigs: string[];
-  favicon: string | undefined;
+  favicon?: string;
 }
 
 interface ImageParameter {
@@ -110,9 +110,7 @@ export function isValidConfig(conf: any, mustKeys: string[]) {
  *
  * @param fileUri
  */
-export async function fetchLocalConfig(
-  fileUri: vscode.Uri
-) {
+export async function fetchLocalConfig(fileUri: vscode.Uri) {
   if (!isValidPath(fileUri.fsPath, true)) {
     vscode.window.showErrorMessage(
       `FileNotFound: Couldn't find the gallery configuration at ${fileUri.fsPath}.`
@@ -120,9 +118,7 @@ export async function fetchLocalConfig(
     return;
   }
   const confFile = await vscode.workspace.fs.readFile(fileUri);
-  const yamlObj = (
-    yaml.parse(confFile.toString())
-  ) as GalleryConfig;
+  const yamlObj = yaml.parse(confFile.toString()) as GalleryConfig;
   return yamlObj;
 }
 

@@ -145,20 +145,20 @@ async function importLocal(ctx: vscode.ExtensionContext) {
 async function openGallery(
   ctx: vscode.ExtensionContext,
   gallery: Gallery,
-  projectName?: string
+  prjIdentifier?: string
 ) {
   const projects = await getIndexFile(ctx.extensionUri);
-  if (!projectName) {
-    projectName = await getProjectChoice(
+  if (!prjIdentifier) {
+    prjIdentifier = await getProjectChoice(
       ctx.extensionUri,
       "Choose a gallery to open",
       Object.values(projects).map((v) => v.projectName)
     );
-    if (!projectName) {
+    if (!prjIdentifier) {
       return;
     }
   }
-  getLocalGallery(ctx.extensionUri, projectName, projects).then((choice) => {
+  getLocalGallery(ctx.extensionUri, prjIdentifier, projects).then((choice) => {
     if (!choice) {
       vscode.window.showErrorMessage(
         "Couldn't find the gallery you've chosen."
@@ -313,6 +313,7 @@ export function activate(ctx: vscode.ExtensionContext) {
     }),
     vscode.commands.registerCommand("plywood-gallery.Refresh", () => {
       treeViewProvider.refresh();
+      gallery.refresh();
     }),
     vscode.commands.registerCommand(
       "plywood-gallery.CheckGalleryUpdate",
