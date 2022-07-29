@@ -168,13 +168,13 @@ export class InstalledGalleriesExplorerProvider
     this.categoryNodes = [
       new GalleryTreeItem(
         this.extensionUri,
-        vscode.TreeItemCollapsibleState.Collapsed,
+        vscode.TreeItemCollapsibleState.Expanded,
         "Remote Galleries",
         remoteCategoryType
       ),
       new GalleryTreeItem(
         this.extensionUri,
-        vscode.TreeItemCollapsibleState.Collapsed,
+        vscode.TreeItemCollapsibleState.Expanded,
         "Local Galleries",
         localCategoryType
       ),
