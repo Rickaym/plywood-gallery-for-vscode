@@ -295,7 +295,7 @@ async function moveCacheToLocal(extensionUri: vscode.Uri, projectName: string) {
   }
   const localDir = localDirectoryOf(extensionUri, projectName);
   if (isValidPath(localDir.fsPath, false)) {
-    removeProjectFolder(localDir);
+    await removeProjectFolder(localDir);
   }
   return vscode.workspace.fs
     .copy(cacheDir, localDir)
