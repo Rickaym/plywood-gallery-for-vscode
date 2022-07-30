@@ -178,16 +178,16 @@ export async function fetchRemoteConfigFromBatch(
  * and writes onto the local subdirectory.
  *
  * @param extensionUri
- * @param remoteRootDir
+ * @param repoRootUrl
  * @param contentAddon The added part to the remote root dir to fetch config
  * @returns GalleryParams
  */
 export async function fetchRemoteConfig(
   extensionUri: vscode.Uri,
-  remoteRootDir: string,
+  repoRootUrl: string,
   contentAddon: string = PROJECT_CONFIG_FILENAME
 ) {
-  const contentUrl = `${remoteRootDir}/${contentAddon}`;
+  const contentUrl = `${repoRootUrl}/${contentAddon}`;
   Log.info(`Fetching entry configuration from content url "${contentUrl}"`);
   return getContent(contentUrl, "gallery configuration").then((res) => {
     if (!res) {

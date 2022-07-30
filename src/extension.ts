@@ -27,6 +27,7 @@ import {
   GalleryTreeItem,
   HubWebviewProvider,
   InstalledGalleriesExplorerProvider,
+  RecommendedGalleriesProvider
 } from "./hub";
 
 async function importRemote(
@@ -35,7 +36,7 @@ async function importRemote(
   forceReimport: boolean = false
 ) {
   let urlInput = await vscode.window.showInputBox({
-    title: "Raw GitHub Url (you can prefix an optional branch)",
+    title: "GitHub Url (<optional>branch:repo-url)",
     placeHolder: "main:https://github.com/Rickaym/Plywood-Gallery-For-VSCode",
     value: "https://github.com/kolibril13/plywood-gallery-minimal-example/",
   });
@@ -282,16 +283,25 @@ export function activate(ctx: vscode.ExtensionContext) {
     }
   });
 
-  const treeViewProvider = new InstalledGalleriesExplorerProvider(
-    ctx.extensionUri
-  );
-  var rootPerm = false;
-  vscode.window.registerTreeDataProvider(
-    "installed-galleries",
-    treeViewProvider
-  );
+  let rootPerm = false;
   const gallery = new Gallery(ctx.subscriptions, ctx.extensionUri);
   gallery.onActivate();
+  const installedGalleriesTreeView = new InstalledGalleriesExplorerProvider(
+    ctx.extensionUri
+  );
+  const recommendedGalleriesTreeView = new RecommendedGalleriesProvider(
+    ctx.extensionUri
+  );
+
+  vscode.window.registerTreeDataProvider(
+    "installed-galleries",
+    installedGalleriesTreeView
+  );
+  vscode.window.registerTreeDataProvider(
+    "recommended-galleries",
+    recommendedGalleriesTreeView
+  );
+
   ctx.subscriptions.push(
     vscode.commands.registerCommand(
       "plywood-gallery.ImportRemote",
@@ -312,7 +322,7 @@ export function activate(ctx: vscode.ExtensionContext) {
       clearCache(ctx);
     }),
     vscode.commands.registerCommand("plywood-gallery.Refresh", () => {
-      treeViewProvider.refresh();
+      installedGalleriesTreeView.refresh();
       gallery.refresh();
     }),
     vscode.commands.registerCommand(

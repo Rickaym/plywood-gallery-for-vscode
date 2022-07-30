@@ -5,11 +5,14 @@
 
 import * as vscode from "vscode";
 import {
+  getContent,
   getWebviewResFp,
   getWebviewResource,
+  Log,
+  RECOMMENDED_GALLERY_ENLISTING_CONFIG_URL,
   WebviewResources,
 } from "./globals";
-import { getAllLocalGalleries, Project } from "./origin";
+import { fetchRemoteConfig, GalleryConfig, getAllLocalGalleries, Project } from "./origin";
 import { TemplateEngine } from "./templateEngine";
 
 const externalGalleryType = "gitGallery";
@@ -201,6 +204,70 @@ export class InstalledGalleriesExplorerProvider
       return Promise.resolve(element.getChildren());
     } else {
       return this.categoryNodes;
+    }
+  }
+}
+
+export class RecommendedGalleryTreeItem extends vscode.TreeItem {
+  constructor(
+    private readonly config: GalleryConfig
+  ) {
+    super(config.project_name, vscode.TreeItemCollapsibleState.None);
+    this.description = `v${this.config.user_content_version}`;
+    this.tooltip = this.config.repository_url;
+    this.command = {
+      title: "Plywood Gallery: Import a Gallery from GitHub.",
+      command: "plywood-gallery.ImportRemote",
+      arguments: [this.config.repository_url],
+    };
+    this.iconPath = this.config.favicon;
+  }
+}
+
+export class RecommendedGalleriesProvider
+  implements vscode.TreeDataProvider<RecommendedGalleryTreeItem>
+{
+  constructor(private extensionUri: vscode.Uri) {}
+
+  private _onDidChangeTreeData: vscode.EventEmitter<
+    RecommendedGalleryTreeItem | undefined | void
+  > = new vscode.EventEmitter<RecommendedGalleryTreeItem | undefined | void>();
+  readonly onDidChangeTreeData: vscode.Event<
+    RecommendedGalleryTreeItem | undefined | void
+  > = this._onDidChangeTreeData.event;
+
+  getTreeItem(element: RecommendedGalleryTreeItem): vscode.TreeItem {
+    return element;
+  }
+
+  refresh(): void {
+    this._onDidChangeTreeData.fire();
+  }
+
+  async getChildren(
+    element?: RecommendedGalleryTreeItem
+  ): Promise<RecommendedGalleryTreeItem[]> {
+    if (element) {
+      return [];
+    } else {
+      Log.info("Fetching enlisted recommended gallery URLS...");
+      const enlisting = await getContent(
+        RECOMMENDED_GALLERY_ENLISTING_CONFIG_URL
+      );
+      if (!enlisting) {
+        Log.error("Enlisted gallery URLs unable to be fetched");
+        return [];
+      }
+      Log.info("Gallery URLs Fetched");
+      const enlisted: RecommendedGalleryTreeItem[] = [];
+      JSON.parse(enlisting.data).forEach(async (url: string) => {
+        const conf = await fetchRemoteConfig(this.extensionUri, url);
+        if (!conf) {
+          return;
+        }
+        enlisted.push(new RecommendedGalleryTreeItem(conf));
+      });
+      return enlisted;
     }
   }
 }

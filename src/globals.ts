@@ -36,6 +36,7 @@ export class Log {
 }
 
 export const PROJECT_CONFIG_FILENAME = "gallery_config.yaml";
+export const RECOMMENDED_GALLERY_ENLISTING_CONFIG_URL = "https://github.com/Rickaym/plywood-gallery-for-vscode/blob/master/media/enlisted.json";
 export const PROJECT_BATCHCONFIG_FILENAME = "batch_gallery_config.yaml";
 export const ALLOWED_ASSET_FILE_EXTENSIONS = [".png", ".jpeg", ".jpg"];
 
@@ -211,7 +212,7 @@ export function asUint8Array(payload: string) {
 
 export async function getContent(
   url: string,
-  contentName: string,
+  contentName: string = "",
   responseType: ResponseType = "text"
 ) {
   return Axios.get(url, { responseType: responseType }).catch((e: any) => {

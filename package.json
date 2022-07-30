@@ -5,7 +5,7 @@
   "version": "0.0.1",
   "publisher": "Rickaym",
   "repository": {
-    "url": "https://github.com/Rickaym/Plywood-Gallery-For-VSCode",
+    "url": "https://github.com/Rickaym/plywood-gallery-for-vscode",
     "type": "git",
     "directory": "src"
   },
@@ -57,7 +57,7 @@
       },
       {
         "view": "recommended-galleries",
-        "contents": "Oh oh! This is not yet supported. Expect great things.\n[Repository](https://github.com/Rickaym/Plywood-Gallery)"
+        "contents": "Fetching and synchronizing..."
       }
     ],
     "views": {
