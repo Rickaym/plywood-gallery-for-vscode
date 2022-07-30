@@ -9,10 +9,16 @@ import {
   getWebviewResFp,
   getWebviewResource,
   Log,
+  prepareRepoUrl,
   RECOMMENDED_GALLERY_ENLISTING_CONFIG_URL,
   WebviewResources,
 } from "./globals";
-import { fetchRemoteConfig, GalleryConfig, getAllLocalGalleries, Project } from "./origin";
+import {
+  fetchRemoteConfig,
+  GalleryConfig,
+  getAllLocalGalleries,
+  Project,
+} from "./origin";
 import { TemplateEngine } from "./templateEngine";
 
 const externalGalleryType = "gitGallery";
@@ -210,7 +216,8 @@ export class InstalledGalleriesExplorerProvider
 
 export class RecommendedGalleryTreeItem extends vscode.TreeItem {
   constructor(
-    private readonly config: GalleryConfig
+    private readonly config: GalleryConfig,
+    private readonly remoteRootUrl: string
   ) {
     super(config.project_name, vscode.TreeItemCollapsibleState.None);
     this.description = `v${this.config.user_content_version}`;
@@ -218,9 +225,12 @@ export class RecommendedGalleryTreeItem extends vscode.TreeItem {
     this.command = {
       title: "Plywood Gallery: Import a Gallery from GitHub.",
       command: "plywood-gallery.ImportRemote",
-      arguments: [this.config.repository_url],
+      arguments: [false, this.config.repository_url],
     };
-    this.iconPath = this.config.favicon;
+    this.iconPath = vscode.Uri.from({
+      scheme: "https",
+      path: `${remoteRootUrl.replace("https:/", "")}/${config.favicon}`,
+    });
   }
 }
 
@@ -258,15 +268,18 @@ export class RecommendedGalleriesProvider
         Log.error("Enlisted gallery URLs unable to be fetched");
         return [];
       }
-      Log.info("Gallery URLs Fetched");
+
+      Log.info(`Gallery URLs Fetched ${enlisting.data}`);
       const enlisted: RecommendedGalleryTreeItem[] = [];
-      JSON.parse(enlisting.data).forEach(async (url: string) => {
-        const conf = await fetchRemoteConfig(this.extensionUri, url);
-        if (!conf) {
-          return;
+      for (const key in enlisting.data) {
+        const url = prepareRepoUrl(enlisting.data[key]);
+        const conf = await fetchRemoteConfig(this.extensionUri, url, {
+          errorOut: false,
+        });
+        if (conf) {
+          enlisted.push(new RecommendedGalleryTreeItem(conf, url));
         }
-        enlisted.push(new RecommendedGalleryTreeItem(conf));
-      });
+      }
       return enlisted;
     }
   }

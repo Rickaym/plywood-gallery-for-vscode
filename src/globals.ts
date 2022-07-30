@@ -36,7 +36,8 @@ export class Log {
 }
 
 export const PROJECT_CONFIG_FILENAME = "gallery_config.yaml";
-export const RECOMMENDED_GALLERY_ENLISTING_CONFIG_URL = "https://github.com/Rickaym/plywood-gallery-for-vscode/blob/master/media/enlisted.json";
+export const RECOMMENDED_GALLERY_ENLISTING_CONFIG_URL =
+  "https://raw.githubusercontent.com/Rickaym/plywood-gallery-for-vscode/master/media/enlisted.json";
 export const PROJECT_BATCHCONFIG_FILENAME = "batch_gallery_config.yaml";
 export const ALLOWED_ASSET_FILE_EXTENSIONS = [".png", ".jpeg", ".jpg"];
 
@@ -213,15 +214,23 @@ export function asUint8Array(payload: string) {
 export async function getContent(
   url: string,
   contentName: string = "",
-  responseType: ResponseType = "text"
+  options: {
+    responseType?: ResponseType;
+    errorOut?: boolean;
+  } = {
+    responseType: "text",
+    errorOut: true,
+  }
 ) {
-  return Axios.get(url, { responseType: responseType }).catch((e: any) => {
+  return Axios.get(url, { responseType: options.responseType }).catch((e: any) => {
     if (e.response) {
-      vscode.window.showErrorMessage(
-        Log.error(
-          `${e.response.status}: ${e.response.statusText}.\nCouldn't fetch ${contentName}..`
-        )
-      );
+      if (options.errorOut) {
+        vscode.window.showErrorMessage(
+          Log.error(
+            `${e.response.status}: ${e.response.statusText}.\nCouldn't fetch ${contentName}..`
+          )
+        );
+      }
     } else {
       throw e;
     }

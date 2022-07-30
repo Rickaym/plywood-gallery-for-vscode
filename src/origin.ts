@@ -159,7 +159,9 @@ export async function fetchRemoteConfigFromBatch(
   }
   const choices: { [category: string]: GalleryConfig } = {};
   for (let addon in yamlObj.galleryConfigs) {
-    const conf = await fetchRemoteConfig(extensionUri, remoteRootDir, addon);
+    const conf = await fetchRemoteConfig(extensionUri, remoteRootDir, {
+      contentAddon: addon,
+    });
     if (!conf) {
       return;
     }
@@ -178,18 +180,25 @@ export async function fetchRemoteConfigFromBatch(
  * and writes onto the local subdirectory.
  *
  * @param extensionUri
- * @param repoRootUrl
- * @param contentAddon The added part to the remote root dir to fetch config
+ * @param rawRootRepoUrl The raw.usercontent github URL to the directory root
  * @returns GalleryParams
  */
 export async function fetchRemoteConfig(
   extensionUri: vscode.Uri,
-  repoRootUrl: string,
-  contentAddon: string = PROJECT_CONFIG_FILENAME
+  rawRootRepoUrl: string,
+  options: { contentAddon?: string; errorOut?: boolean } = {
+    contentAddon: PROJECT_CONFIG_FILENAME,
+    errorOut: true,
+  }
 ) {
-  const contentUrl = `${repoRootUrl}/${contentAddon}`;
+  const contentUrl = `${rawRootRepoUrl}/${
+    options.contentAddon || PROJECT_CONFIG_FILENAME
+  }`;
+
   Log.info(`Fetching entry configuration from content url "${contentUrl}"`);
-  return getContent(contentUrl, "gallery configuration").then((res) => {
+  return getContent(contentUrl, "gallery configuration", {
+    errorOut: options.errorOut,
+  }).then((res) => {
     if (!res) {
       return;
     }
@@ -383,7 +392,9 @@ export async function fetchRemoteAssets(
   if (config.favicon) {
     const iconUrl = `${remoteRootUrl}/${config.favicon}`;
     Log.info(`Fetching gallery favicon from URL ${iconUrl}.`);
-    const ico = await getContent(iconUrl, "gallery favicon", "arraybuffer");
+    const ico = await getContent(iconUrl, "gallery favicon", {
+      responseType: "arraybuffer",
+    });
     if (!ico) {
       return;
     }

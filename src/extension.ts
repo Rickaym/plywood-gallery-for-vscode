@@ -27,24 +27,27 @@ import {
   GalleryTreeItem,
   HubWebviewProvider,
   InstalledGalleriesExplorerProvider,
-  RecommendedGalleriesProvider
+  RecommendedGalleriesProvider,
 } from "./hub";
 
 async function importRemote(
   ctx: vscode.ExtensionContext,
   rootPerm: boolean = false,
-  forceReimport: boolean = false
+  forceReimport: boolean = false,
+  urlInput?: string
 ) {
-  let urlInput = await vscode.window.showInputBox({
-    title: "GitHub Url (<optional>branch:repo-url)",
-    placeHolder: "main:https://github.com/Rickaym/Plywood-Gallery-For-VSCode",
-    value: "https://github.com/kolibril13/plywood-gallery-minimal-example/",
-  });
   if (!urlInput) {
-    return;
-  } else {
-    var repoUrl = urlInput;
+    urlInput = await vscode.window.showInputBox({
+      title: "GitHub Url (<optional>branch:repo-url)",
+      placeHolder: "main:https://github.com/Rickaym/Plywood-Gallery-For-VSCode",
+      value: "https://github.com/kolibril13/plywood-gallery-minimal-example/",
+    });
+    if (!urlInput) {
+      return;
+    }
   }
+
+  let repoUrl = urlInput;
   let url = prepareRepoUrl(urlInput);
   if (
     !rootPerm &&
