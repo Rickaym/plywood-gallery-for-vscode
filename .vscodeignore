@@ -5,6 +5,7 @@ node_modules/**
 src/**
 .gitignore
 .yarnrc
+.release.bat
 webpack.config.js
 **/tsconfig.json
 **/.eslintrc.json
