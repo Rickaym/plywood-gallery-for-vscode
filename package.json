@@ -2,7 +2,7 @@
   "name": "plywood-gallery",
   "displayName": "Plywood Gallery For VSCode",
   "description": "A utility Extension to visualize code snippets for Graphical Frameworks.",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "publisher": "Rickaym",
   "repository": {
     "url": "https://github.com/Rickaym/plywood-gallery-for-vscode",
