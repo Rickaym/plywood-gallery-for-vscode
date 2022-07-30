@@ -43,6 +43,14 @@ You can load galleries from two distinct locations:
 - [Local Repositories/Directories](#local-galleries)
 
 ### Remote Galleries
+
+## Recommended
+Plywood Gallery for VSCode offers a list of recommended Galleries that you can find in the latter Tree View Container.
+<br><br><img src="https://raw.githubusercontent.com/Rickaym/Plywood-Gallery-For-VSCode/master/media/treeview2.png" width="200"><br><br>
+
+You can find featured Galleries here available for download! Simply click on them to download them instantly.
+
+## Repositories
 In order to load a remote github gallery, you can use the
 command `plywood-gallery.ImportRemote` or via the button for `cloud-download` in
 the treeview navigation bar.
