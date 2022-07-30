@@ -4,7 +4,7 @@
 <a href="https://marketplace.visualstudio.com/items?itemName=Rickaym.plywood-gallery"><img alt="Extension Version" src="https://img.shields.io/visual-studio-marketplace/v/Rickaym.plywood-gallery?style=for-the-badge&logo=verizon&logoColor=white"></a>
 <a href="https://discord.gg/UmnzdPgn6g"><img src="https://img.shields.io/badge/GET SUPPORT-DISCORD-orange?style=for-the-badge&logo=discord&logoColor=white&color=5865F2"></a>
 
-This extension inserts code snippets into VS Code, where the snippets are represented by images.
+This extension inserts code snippets into VS Code through images.
 
 ## Key Features
 
@@ -12,9 +12,9 @@ This extension inserts code snippets into VS Code, where the snippets are repres
 - Text/dropdown support for Code Snippets
 - Gain access to many community and official code snippet repositories
 
-A gallery simply put is a list of mappings of **code** and **image** using
+Each gallery is a list of **code** and **image** mappings using
 the template specifed by the core gallery [Plywood Gallery](https://github.com/kolibril13/plywood-gallery/).
-Community members can make a gallery of their own by following the said template and
+Individual developers can make a gallery of their own by following the template and
 publish them to Github where users can download and import them. Once a gallery is
 imported via [these steps](#importing-galleries), a webview will be installed for the
 imported gallery whereby using it is as easy as pressing on the images of the objects that
