@@ -130,21 +130,26 @@ export class Gallery {
       this.panel = panel;
     }
 
-    let engine = new TemplateEngine(panel.webview, this.resource);
-    let galleryItemDoc = (
+    const engine = new TemplateEngine(
+      panel.webview,
+      this.resource,
+      "gallery",
+      this.extensionUri
+    );
+    const galleryItemDoc = (
       await vscode.workspace.fs.readFile(
         getWebviewResFp(this.extensionUri, "gallery", "html", "img_item")
       )
     ).toString();
     let styles: SafeCSS[] = [];
-    let galleryObjs = Object.keys(project.parameters)
+    const galleryObjs = Object.keys(project.parameters)
       .map((title) => {
         return `<h2>${title}</h2>\n${project.parameters[title]
           .map((imgMap) => {
             styles.push(this.extractSafeCSS(imgMap.css));
             const code = imgMap.code.replace(/"/g, "'");
             const imgPath = project.imagePath(imgMap.image_path);
-            return TemplateEngine.trueRender(galleryItemDoc, {
+            return TemplateEngine.textRender(galleryItemDoc, {
               imgSrc: panel.webview.asWebviewUri(imgPath),
               imgCode: code,
             });

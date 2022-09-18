@@ -4,22 +4,38 @@ import { getNonce, WebviewResources } from "./globals";
 export class TemplateEngine {
   constructor(
     public readonly webview: vscode.Webview,
-    public readonly resource: WebviewResources
+    public readonly resource: WebviewResources,
+    public readonly name: String,
+    public readonly extensionUri: vscode.Uri
   ) {}
 
   private resMap = {
-    js: ` ${this.resource.name}.js`,
-    css: ` ${this.resource.name}.css`,
+    js: ` ${this.name}.js`,
+    css: ` ${this.name}.css`,
   };
+
+  /**
+   * A list of preamble context variables that will be rendered without
+   * explicit instructions.
+   */
   private preamble = {
     cspSource: this.webview.cspSource,
     [this.resMap.js]: this.webview.asWebviewUri(this.resource.js).toString(),
     [this.resMap.css]: this.webview.asWebviewUri(this.resource.css).toString(),
     nonce: getNonce(),
+    "codicon.css": this.webview.asWebviewUri(
+      vscode.Uri.joinPath(
+        this.extensionUri,
+        "node_modules",
+        "vscode-codicons",
+        "dist",
+        "codicon.css"
+      )
+    ),
   };
 
   static async renderDoc(fp: vscode.Uri, globals: { [varname: string]: any }) {
-    return TemplateEngine.trueRender(
+    return TemplateEngine.textRender(
       (await vscode.workspace.fs.readFile(fp)).toString(),
       globals
     );
@@ -29,21 +45,18 @@ export class TemplateEngine {
     return new RegExp(`${property}\s*:\s*(${pattern})\s*;`);
   }
 
-  static trueRender(htmlDoc: string, globals: { [varname: string]: any }) {
+  static textRender(text: string, globals: { [varname: string]: any }) {
     Object.keys(globals).forEach((varname) => {
       if (varname.startsWith(" ")) {
-        htmlDoc = htmlDoc.replace(
-          new RegExp(varname.trim(), "gi"),
-          globals[varname]
-        );
+        text = text.replace(new RegExp(varname.trim(), "gi"), globals[varname]);
       } else {
-        htmlDoc = htmlDoc.replace(
+        text = text.replace(
           new RegExp(`{{ ${varname} }}`, "gi"),
           globals[varname]
         );
       }
     });
-    return htmlDoc;
+    return text;
   }
 
   /**
@@ -60,8 +73,8 @@ export class TemplateEngine {
    * space.
    */
   async render(globals: { [varname: string]: any }) {
-    return TemplateEngine.trueRender(
-      TemplateEngine.trueRender(
+    return TemplateEngine.textRender(
+      TemplateEngine.textRender(
         (await vscode.workspace.fs.readFile(this.resource.html)).toString(),
         this.preamble
       ),
