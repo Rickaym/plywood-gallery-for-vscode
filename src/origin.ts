@@ -33,7 +33,6 @@ export interface GalleryConfig {
   user_content_version: string;
   description: string;
   favicon: string;
-  custom_footer: string;
   gallery_parameters_path: string;
 }
 

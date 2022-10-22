@@ -163,7 +163,6 @@ export class Gallery {
       galleryObjects: galleryObjs,
       galleryDesc: project.config.description,
       galleryTitle: project.config.project_name,
-      galleryFooter: project.config.custom_footer,
       userContentVersion: project.config.user_content_version,
       destination: project.index.isExternal ? "Remote" : "Local",
     });
