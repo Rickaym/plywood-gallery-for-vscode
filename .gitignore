@@ -8,5 +8,4 @@ node_modules
 # development traces
 !local/
 local/*
-!local/index.json
 cache
