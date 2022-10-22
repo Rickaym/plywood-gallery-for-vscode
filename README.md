@@ -48,7 +48,7 @@ You can load galleries from two distinct locations:
 Plywood Gallery for VSCode offers a list of recommended Galleries that you can find in the latter Tree View Container.
 <br><br><img src="https://raw.githubusercontent.com/Rickaym/Plywood-Gallery-For-VSCode/master/media/treeview2.png" width="200"><br><br>
 
-You can find featured Galleries here available for download! Simply click on them to download them instantly.
+You can find featured Galleries here available for download! Simply click on them to download them instantly. If you would like to feature your Gallery for recommendations, create an issue! We'd be very happy to do so if your gallery meets the given security criteria.
 
 ## Repositories
 In order to load a remote github gallery, you can use the
