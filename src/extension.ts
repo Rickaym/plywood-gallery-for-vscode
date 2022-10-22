@@ -30,6 +30,8 @@ import {
   RecommendedGalleriesProvider,
 } from "./hub";
 
+const DOWLOAD_QUEUE: String[] = [];
+
 async function importRemote(
   ctx: vscode.ExtensionContext,
   rootPerm: boolean = false,
@@ -76,6 +78,13 @@ async function importRemote(
   ) {
     return;
   }
+  if (DOWLOAD_QUEUE.includes(repoUrl)) {
+    vscode.window.showErrorMessage(
+      Log.error("You're already downloading this gallery!")
+    );
+    return;
+  }
+  DOWLOAD_QUEUE.push(repoUrl);
   vscode.window.withProgress(
     {
       location: vscode.ProgressLocation.Notification,

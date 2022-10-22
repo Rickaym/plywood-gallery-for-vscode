@@ -33,7 +33,7 @@ function tabularize(
   project: Project,
   webview: vscode.Webview
 ) {
-  return TemplateEngine.trueRender(htmlDoc, {
+  return TemplateEngine.textRender(htmlDoc, {
     galleryPreviewImagePath: webview.asWebviewUri(project.previewImage),
     galleryTitle: project.config.project_name,
     galleryDesc: project.config.description.replace(new RegExp("\n", "g"), " "),
@@ -54,7 +54,12 @@ export class HubWebviewProvider implements vscode.WebviewViewProvider {
     token: vscode.CancellationToken
   ): Promise<void> {
     webviewView.webview.options = { enableScripts: true };
-    let engine = new TemplateEngine(webviewView.webview, this.resource);
+    let engine = new TemplateEngine(
+      webviewView.webview,
+      this.resource,
+      "hub",
+      this.ctx.extensionUri
+    );
     let hubItemDoc = (
       await vscode.workspace.fs.readFile(
         getWebviewResFp(this.ctx.extensionUri, "hub", "html", "hub_item")

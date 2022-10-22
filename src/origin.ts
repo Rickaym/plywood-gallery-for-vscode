@@ -19,6 +19,8 @@ import {
   getContent,
 } from "./globals";
 import Axios from "axios";
+/* eslint-disable @typescript-eslint/naming-convention */
+
 import {
   addIndex,
   getIndex,
