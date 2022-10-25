@@ -30,7 +30,7 @@ import {
   RecommendedGalleriesProvider,
 } from "./hub";
 
-const DOWLOAD_QUEUE: String[] = [];
+const DOWNLOAD_QUEUE: String[] = [];
 
 async function importRemote(
   ctx: vscode.ExtensionContext,
@@ -78,13 +78,14 @@ async function importRemote(
   ) {
     return;
   }
-  if (DOWLOAD_QUEUE.includes(repoUrl)) {
+  if (DOWNLOAD_QUEUE.includes(repoUrl)) {
     vscode.window.showErrorMessage(
       Log.error("You're already downloading this gallery!")
     );
     return;
   }
-  DOWLOAD_QUEUE.push(repoUrl);
+  DOWNLOAD_QUEUE.push(repoUrl);
+  Log.info(`Added "${repoUrl}" to download queue.`);
   vscode.window.withProgress(
     {
       location: vscode.ProgressLocation.Notification,
@@ -93,6 +94,15 @@ async function importRemote(
     },
     (progress, token) =>
       fetchRemoteAssets(ctx.extensionUri, url, repoUrl, config, progress, token)
+        .then(() => {
+          DOWNLOAD_QUEUE.splice(DOWNLOAD_QUEUE.indexOf(repoUrl), 1);
+          Log.info(`Removed "${repoUrl}" from download queue.`);
+        })
+        .catch((err) =>
+          vscode.window.showErrorMessage(
+            `Gallery download error: ${Log.error(err)}`
+          )
+        )
   );
 }
 
@@ -336,6 +346,7 @@ export function activate(ctx: vscode.ExtensionContext) {
     vscode.commands.registerCommand("plywood-gallery.Refresh", () => {
       installedGalleriesTreeView.refresh();
       gallery.refresh();
+      DOWNLOAD_QUEUE.length = 0;
     }),
     vscode.commands.registerCommand(
       "plywood-gallery.CheckGalleryUpdate",

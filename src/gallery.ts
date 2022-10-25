@@ -136,31 +136,9 @@ export class Gallery {
       "gallery",
       this.extensionUri
     );
-    const galleryItemDoc = (
-      await vscode.workspace.fs.readFile(
-        getWebviewResFp(this.extensionUri, "gallery", "html", "img_item")
-      )
-    ).toString();
-    let styles: SafeCSS[] = [];
-    const galleryObjs = Object.keys(project.parameters)
-      .map((title) => {
-        return `<h2>${title}</h2>\n${project.parameters[title]
-          .map((imgMap) => {
-            styles.push(this.extractSafeCSS(imgMap.css));
-            const code = imgMap.code.replace(/"/g, "'");
-            const imgPath = project.imagePath(imgMap.image_path);
-            return TemplateEngine.textRender(galleryItemDoc, {
-              imgSrc: panel.webview.asWebviewUri(imgPath),
-              imgCode: code,
-            });
-          })
-          .join("\n")}`;
-      })
-      .join("\n");
 
     panel.iconPath = project.iconPath;
     panel.webview.html = await engine.render({
-      galleryObjects: galleryObjs,
       galleryDesc: project.config.description,
       galleryTitle: project.config.project_name,
       userContentVersion: project.config.user_content_version,
@@ -168,18 +146,37 @@ export class Gallery {
     });
     panel.webview.onDidReceiveMessage(
       (message) => {
-        if (message.command === "update") {
-          checkGalleryUpdate(this.extensionUri, project).then((status) => {
-            if (!status) {
-              vscode.window.showInformationMessage(
-                `${project.config.project_name} does not have any new updates!`
-              );
-            }
-          });
-        } else if (message.command === "getStyles") {
-          panel.webview.postMessage({ command: "styles", data: styles });
-        } else if (message.command === "codeInsert") {
-          this.insertCode(message.code);
+        switch (message.command) {
+          case "update":
+            checkGalleryUpdate(this.extensionUri, project).then((status) => {
+              if (!status) {
+                vscode.window.showInformationMessage(
+                  `${project.config.project_name} does not have any new updates!`
+                );
+              }
+            });
+            break;
+          case "loaded":
+            const galleryData: any = {};
+            // set the tmp_webview_resource_url before posting the object
+            Object.keys(project.parameters.plywood_content).forEach((title) => {
+              galleryData[title] = {};
+              project.parameters.plywood_content[title].forEach((imgMap) => {
+                galleryData[title][
+                  panel.webview
+                    .asWebviewUri(project.imagePath(imgMap.image_path))
+                    .toString()
+                ] = { code: imgMap.code, css: this.extractSafeCSS(imgMap.css) };
+              });
+            });
+            panel.webview.postMessage({
+              command: "fill",
+              data: galleryData,
+            });
+            break;
+          case "codeInsert":
+            this.insertCode(message.code);
+            break;
         }
       },
       undefined,
@@ -251,7 +248,7 @@ export class Gallery {
     }
 
     Log.info(`Inserting code into "${lastEditor.document.fileName}".`);
-    code = Gallery.adaptiveIndent(code, lastEditor);
+    code = Gallery.adaptiveIndent(code, lastEditor).trimEnd() + "\n";
 
     lastEditor
       .edit((e) => {

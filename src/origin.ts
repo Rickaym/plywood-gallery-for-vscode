@@ -51,13 +51,20 @@ interface ImageParameter {
   code: string;
 }
 
-export type GalleryParams = { [category: string]: ImageParameter[] };
+interface PlywoodMetadata {
+  plywood_gallery_core_version: string;
+}
+
+export type GalleryParameters = {
+  plywood_metadata: PlywoodMetadata;
+  plywood_content: { [category: string]: ImageParameter[] };
+};
 
 export class Project {
   constructor(
     private readonly extensionUri: vscode.Uri,
     public readonly config: GalleryConfig,
-    public readonly parameters: GalleryParams,
+    public readonly parameters: GalleryParameters,
     public readonly previewImage: vscode.Uri,
     public readonly index: IndexMenu
   ) {}
@@ -408,7 +415,9 @@ export async function fetchRemoteAssets(
       ico.data
     );
   }
-  Log.error(`Fetching assets from remote ${res.config.url}`);
+  Log.info(
+    `Fetching assets from remote ${res.config.url} with status code ${res.status}`
+  );
   if (res.status !== 200) {
     vscode.window.showErrorMessage(
       Log.error(
@@ -418,10 +427,10 @@ export async function fetchRemoteAssets(
     return;
   }
 
-  let params: GalleryParams = res.data;
+  let params: GalleryParameters = res.data;
   var imgsDownloaded = 0;
 
-  const nImgs = Object.values(params)
+  const nImgs = Object.values(params.plywood_content)
     .map((arr) => arr.length)
     .reduce((a, b) => a + b, 0);
 
@@ -462,8 +471,8 @@ export async function fetchRemoteAssets(
     }
   }
 
-  for (var category of Object.keys(params)) {
-    for (var param of params[category]) {
+  for (var category of Object.keys(params.plywood_content)) {
+    for (var param of params.plywood_content[category]) {
       const imgPath = param.image_path;
       const imgName = imgPath.split("/").pop();
       if (!imgName) {
@@ -593,7 +602,7 @@ export async function getLocalGallery(
       )
     : vscode.Uri.joinPath(configDir, `../${config.gallery_parameters_path}`);
 
-  const params: GalleryParams = JSON.parse(
+  const params: GalleryParameters = JSON.parse(
     (await vscode.workspace.fs.readFile(galleryParamsDir)).toString()
   );
 
@@ -604,7 +613,11 @@ export async function getLocalGallery(
     localDirectoryOf(
       extensionUri,
       menu.projectName,
-      params[Object.keys(params)[0]][0].image_path.split("/").pop()
+      params.plywood_content[
+        Object.keys(params.plywood_content)[0]
+      ][0].image_path
+        .split("/")
+        .pop()
     ),
     menu
   );
@@ -625,6 +638,7 @@ export async function getAllLocalGalleries(
   const idxMenu = await getIndexFile(extensionUri);
   for (let identifier of Object.keys(idxMenu)) {
     const prj = await getLocalGallery(extensionUri, identifier, idxMenu);
+    // filter the projects returned based on the isExternal strain given
     if (prj && prj.index.isExternal === isExternal) {
       galleries.push(prj);
     }

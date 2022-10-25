@@ -18,7 +18,7 @@ h2 {
 .image-button:hover {
   border-color: var(--vscode-textLink-foreground);
   cursor: pointer;
-  transform: scale(1.1);
+  transform: scale(1.01);
 }
 
 .gallery-header-controller {
