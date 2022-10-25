@@ -8,11 +8,20 @@ A Visual Studio code extension with rich support for integrating the use of
 [Plywood Gallery](https://github.com/kolibril13/plywood-gallery):
 allowing the insertion of code snippets into the editor through images galleries.
 
+## Index
+
+1. [Key Features](#key-features)
+1. [Introduction](#introduction)
+1. [Importing Gallaries](#importing-galleries)
+1. [Release Notes](#release-notes)
+
 ## Key Features
 
 - Visualizing Code Snippets
 - Text/dropdown support for Code Snippets
 - Gain access to many community and official code snippet repositories
+
+## Introduction
 
 A Gallery is a list of **code** and **image** mappings using
 the template specifed by the core gallery [Plywood Gallery](https://github.com/kolibril13/plywood-gallery/).
@@ -25,14 +34,12 @@ images that the gallery provides. After placing the cursor down to the desired l
 you can press on the images to insert the code snippet tied to it.
 <br><br><img src="https://raw.githubusercontent.com/Rickaym/Plywood-Gallery-For-VSCode/master/media/usage.gif" width="600"><br><br>
 
-
-## Introduction
-
 After the extension is fully installed, you will be introduced to this treeview on the activity bar.
 <br><br><img src="https://raw.githubusercontent.com/Rickaym/Plywood-Gallery-For-VSCode/master/media/treeview.png" width="200"><br><br>
 Here you can control and modify imported galleries.
 
 #### Certain things you can do inside the treeview
+
 - Import Local and Remote galleries
 - Remove Local and Remote galleries
 - Check for Remote gallery updates
@@ -42,12 +49,14 @@ Here you can control and modify imported galleries.
 ## Importing Galleries
 
 You can load galleries from two distinct locations:
+
 - [Remote GitHub Repositories](#remote-galleries)
 - [Local Repositories/Directories](#local-galleries)
 
 ### Remote Galleries
 
 #### Recommended
+
 By default the extension provides a curated list of recommended Galleries.
 <br><br><img src="https://raw.githubusercontent.com/Rickaym/Plywood-Gallery-For-VSCode/master/media/treeview2.png" width="200"><br><br>
 You click these Galleries to download them instantenously.
@@ -55,6 +64,7 @@ You click these Galleries to download them instantenously.
 For Gallery Developers: if you would like to feature your own Gallery for recommendations, make sure that your gallery meets the given security criteria and create an issue for it!
 
 #### Repositories
+
 In order to load a remote github gallery, you can use the
 command `plywood-gallery.ImportRemote` or via the button for `cloud-download` in
 the treeview navigation bar.
@@ -65,13 +75,16 @@ under the `main` branch of any specified repositories, in cases where this may n
 an optional branch parameter before the URL with a semi-colon.
 
 E.g.
+
 ```apache
 master;https://github.com/kolibril13/plywood-gallery-minimal-example
 ```
 
 ### Local Galleries
+
 In order to load a local gallery, you can use the
 command:
+
 - `plywood-gallery.ImportLocal`
 - via the button for `desktop-download`
 
