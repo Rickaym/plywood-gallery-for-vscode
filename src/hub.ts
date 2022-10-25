@@ -102,7 +102,7 @@ export class GalleryTreeItem extends vscode.TreeItem {
         );
       }
     } else if (type === chapterType && this.project) {
-      this.description = `${this.project.parameters[name].length} items`;
+      this.description = `${this.project.parameters.plywood_content[name].length} items`;
       this.iconPath = new vscode.ThemeIcon("book");
     } else if (type === sectionType) {
       this.iconPath = new vscode.ThemeIcon("code");
@@ -158,7 +158,7 @@ export class GalleryTreeItem extends vscode.TreeItem {
           )
       );
     } else if (this.type === chapterType && this.project) {
-      return this.project.parameters[this.name].map((sect) => {
+      return this.project.parameters.plywood_content[this.name].map((sect) => {
         const lastPart = sect.image_path.split("/");
         return new GalleryTreeItem(
           this.extensionUri,
